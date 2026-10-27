@@ -403,6 +403,9 @@
       </div>
 
       <div class="mp-controls">
+        <a href="/docs.html" target="_blank" class="mp-select" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.25); font-weight: 700;">
+          <span>📖 Shippo-Style Docs</span>
+        </a>
         <a href="/" class="mp-select" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.25);">
           <span>← Pinduoduo Xaritasi</span>
         </a>
@@ -445,9 +448,24 @@
           <span>Yetkazib berish xizmatini tanlang</span>
           <span class="badge-step">GET /v1/rates</span>
         </div>
-        <p style="font-size: 12px; color: var(--mp-text-muted); margin-bottom: 12px;">
-          Mavjud kuryerlik kompaniyalari (Fargo, EMU, BTS, UzPost) tariflari va yetkazish muddatlari:
+        <p style="font-size: 12px; color: var(--mp-text-muted); margin-bottom: 8px;">
+          Eng yaqin transport yo'nalishi va real yo'l masofasi bo'yicha hisoblangan kuryerlik tariflari:
         </p>
+
+        <!-- Dynamic Calculated Route & Distance Banner -->
+        <div id="route-calc-banner" style="background: #f1f5f9; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; border: 1px solid #e2e8f0;">
+          <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px;">
+            <span style="font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 5px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+              <span id="route-calc-distance">Hisoblanmoqda: 386.2 km (Toshkent → Samarqand)</span>
+            </span>
+            <span id="route-calc-badge" style="background: #10b98122; color: #059669; font-weight: 700; padding: 2px 6px; border-radius: 4px; font-size: 10px;">O'zbekiston ichki xavfsiz koridori</span>
+          </div>
+          <div id="route-calc-corridor" style="font-size: 11px; color: #64748b; line-height: 1.4;">
+            M39 Janubiy Aylanma: Toshkent → Yangiyo'l → Chinoz → Sirdaryo → Guliston → Yangiyer → Dashtobod → Zarbdor → Jizzax → Samarqand
+          </div>
+        </div>
+
         <div class="rates-list" id="rates-container">
           <!-- Dynamically populated from GET /v1/rates -->
           <div style="font-size: 12px; color: #64748b;">Tariflar yuklanmoqda...</div>
@@ -585,12 +603,31 @@
       }
     };
 
-    // 1. Fetch live multi-carrier quotes via GET /v1/rates
+    // 1. Fetch live multi-carrier quotes via GET /v1/rates (with real-time route calculation)
     async function loadRates() {
       const container = document.getElementById('rates-container');
+      const curProd = platformCatalog[currentBrand];
+      
+      // Determine origin and destination based on catalog item
+      let origin = "Toshkent";
+      let dest = "Samarqand";
+      if (currentBrand === 'asaxiy') dest = "Buxoro";
+      if (currentBrand === 'zoodmall') dest = "Toshkent";
+
       try {
-        const res = await fetch('/v1/rates?origin=Toshkent&destination=Samarqand&weight_kg=2.0');
+        const res = await fetch(`/v1/rates?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&weight_kg=2.0`);
         const data = await res.json();
+
+        // Update route calculation banner
+        if (data.route_calculation) {
+          const rc = data.route_calculation;
+          const distEl = document.getElementById('route-calc-distance');
+          const corrEl = document.getElementById('route-calc-corridor');
+          const badgeEl = document.getElementById('route-calc-badge');
+          if (distEl) distEl.innerText = `Eng yaqin yo'nalish: ${rc.distance_km} km (${origin} → ${dest}) • ~${rc.transit_hours} soat`;
+          if (corrEl) corrEl.innerHTML = `<strong>${rc.route_name}:</strong> ${rc.route_corridor}`;
+          if (badgeEl) badgeEl.innerText = rc.domestic_only ? "O'zbekiston ichki xavfsiz koridori" : "Xalqaro";
+        }
         
         container.innerHTML = data.rates.map((r, idx) => `
           <div class="rate-card ${r.carrier_code === selectedCarrier ? 'selected' : ''}" onclick="selectCarrier('${r.carrier_code}')">
@@ -601,12 +638,12 @@
                   ${r.carrier_name}
                   ${r.badge ? `<span class="rate-badge">${r.badge}</span>` : ''}
                 </div>
-                <div class="rate-service">${r.service_name} • ${r.features[0]}</div>
+                <div class="rate-service">${r.service_name} • ${r.features[3] || r.features[0]}</div>
               </div>
             </div>
             <div class="rate-price-tag">
               <div class="rate-amount">${r.price_uzs.toLocaleString()} UZS</div>
-              <div class="rate-eta">${r.estimated_days}</div>
+              <div class="rate-eta">${r.estimated_days} (~${r.estimated_hours || 6} soat)</div>
             </div>
           </div>
         `).join('');

@@ -450,67 +450,160 @@ class UzTrackHandler(http.server.SimpleHTTPRequestHandler):
             query = urllib.parse.parse_qs(parsed.query)
             origin = query.get("origin", ["Toshkent"])[0]
             dest = query.get("destination", ["Samarqand"])[0]
-            weight = float(query.get("weight_kg", [1.5])[0])
+            weight = float(query.get("weight_kg", [2.0])[0])
 
-            is_intra_city = ("toshkent" in origin.lower() and "toshkent" in dest.lower()) or (origin.lower() == dest.lower())
+            orig_clean = origin.strip().lower()
+            dest_clean = dest.strip().lower()
+            is_intra_city = ("toshkent" in orig_clean and "toshkent" in dest_clean) or (orig_clean == dest_clean)
+
+            # High-precision Uzbekistan domestic highway routing matrix
+            route_db = {
+                ("toshkent", "samarqand"): {
+                    "distance_km": 386.2,
+                    "transit_hours": 6.5,
+                    "route_name": "M39 O'zbekiston Janubiy Aylanma Magistrali (Eng yaqin ichki tranzit)",
+                    "route_corridor": "Toshkent → Yangiyo'l → Chinoz → Sirdaryo → Guliston → Yangiyer → Dashtobod → Zarbdor → Jizzax → Bulung'ur → Samarqand",
+                    "domestic_only": True,
+                    "foreign_borders": 0,
+                    "road_quality": "4 polosali zamonaviy magistral"
+                },
+                ("toshkent", "buxoro"): {
+                    "distance_km": 582.0,
+                    "transit_hours": 8.5,
+                    "route_name": "M39 + M37 Markaziy Magistral",
+                    "route_corridor": "Toshkent → Guliston → Jizzax → Samarqand → Kattaqo'rg'on → Navoiy → Buxoro",
+                    "domestic_only": True,
+                    "foreign_borders": 0,
+                    "road_quality": "M37 sement-beton tranzit yo'li"
+                },
+                ("toshkent", "andijon"): {
+                    "distance_km": 348.5,
+                    "transit_hours": 5.5,
+                    "route_name": "A373 Kamchiq Dovoni Magistrali",
+                    "route_corridor": "Toshkent → Ohangaron → Angren → Kamchiq dovoni → Qo'qon → Shahrixon → Andijon",
+                    "domestic_only": True,
+                    "foreign_borders": 0,
+                    "road_quality": "Tog'li dovon tranziti (A373)"
+                },
+                ("toshkent", "farg'ona"): {
+                    "distance_km": 325.0,
+                    "transit_hours": 5.2,
+                    "route_name": "A373 Kamchiq Dovoni Magistrali",
+                    "route_corridor": "Toshkent → Ohangaron → Angren → Kamchiq dovoni → Qo'qon → Marg'ilon → Farg'ona",
+                    "domestic_only": True,
+                    "foreign_borders": 0,
+                    "road_quality": "A373 / 4L ekspress tranzit"
+                },
+                ("toshkent", "qarshi"): {
+                    "distance_km": 455.0,
+                    "transit_hours": 7.2,
+                    "route_name": "M39 + A378 Janubiy Koridor",
+                    "route_corridor": "Toshkent → Guliston → Jizzax → Samarqand aylanma → Qarshi",
+                    "domestic_only": True,
+                    "foreign_borders": 0,
+                    "road_quality": "M39 / A378 Janubiy koridor"
+                }
+            }
+
+            key = (orig_clean, dest_clean)
+            rev_key = (dest_clean, orig_clean)
+            if is_intra_city:
+                route_calc = {
+                    "distance_km": 16.5,
+                    "transit_hours": 0.8,
+                    "route_name": "Shahar Ichki Tezkor Yo'nalishi",
+                    "route_corridor": f"{origin} saralash punkti → {dest} manzili (To'g'ridan-to'g'ri yetkazish)",
+                    "domestic_only": True,
+                    "foreign_borders": 0,
+                    "road_quality": "Shahar ichki ko'chalari"
+                }
+            elif key in route_db:
+                route_calc = route_db[key]
+            elif rev_key in route_db:
+                route_calc = route_db[rev_key]
+            else:
+                route_calc = {
+                    "distance_km": 350.0,
+                    "transit_hours": 6.0,
+                    "route_name": f"{origin} - {dest} Hududiy Magistrali",
+                    "route_corridor": f"{origin} Hub → Magistral Tranzit → {dest} Hub",
+                    "domestic_only": True,
+                    "foreign_borders": 0,
+                    "road_quality": "Respublika ahamiyatidagi tranzit yo'li"
+                }
+
+            dist = route_calc["distance_km"]
+
+            # Dynamic price calculation according to delivery service formula & route distance
+            fargo_price = round((15000 + dist * 42 + weight * 2000) / 1000) * 1000
+            emu_price = round((20000 + dist * 48 + weight * 3000) / 1000) * 1000
+            bts_price = round((12000 + dist * 34 + weight * 1500) / 1000) * 1000
+            uzpost_price = round((10000 + dist * 25 + weight * 1000) / 1000) * 1000
 
             rates = [
                 {
                     "carrier_code": "fargo",
                     "carrier_name": "Fargo Express",
-                    "service_name": "Standart Tranzit (M39)",
-                    "price_uzs": 32000,
-                    "estimated_days": "1-2 kun",
+                    "service_name": "Standart Tranzit (M39 Express)",
+                    "price_uzs": fargo_price,
+                    "estimated_days": "1-2 kun" if dist > 40 else "Shu kunning o'zida",
+                    "estimated_hours": route_calc["transit_hours"],
                     "cutoff_time": "18:00",
                     "is_recommended": True,
                     "badge": "Eng ommabop",
-                    "features": ["Eshikkacha yetkazish", "SMS xabarnoma", "Sug'urta mavjud"]
+                    "features": ["Eshikkacha yetkazish", "SMS xabarnoma", "Sug'urta mavjud", f"Masofa: {dist} km"]
                 },
                 {
                     "carrier_code": "emu",
                     "carrier_name": "EMU Express Mail",
-                    "service_name": "Tezkor Aviatsiya / Avto",
-                    "price_uzs": 38000,
-                    "estimated_days": "1 kun (Ertasi kuni)",
+                    "service_name": "Tezkor Aviatsiya / Avto Ekspress",
+                    "price_uzs": emu_price,
+                    "estimated_days": "1 kun (Ertasi kuni)" if dist < 650 else "1-2 kun",
+                    "estimated_hours": max(4.0, route_calc["transit_hours"] * 0.75),
                     "cutoff_time": "19:30",
                     "is_recommended": False,
                     "badge": "Eng tez",
-                    "features": ["Ekspress topshirish", "Jonli tracking", "Maxsus qadoq"]
+                    "features": ["Ekspress topshirish", "Jonli tracking", "Maxsus qadoq", f"Masofa: {dist} km"]
                 },
                 {
                     "carrier_code": "bts",
                     "carrier_name": "BTS Express Cargo",
                     "service_name": "Ombordan-Omborga Kargo",
-                    "price_uzs": 26000,
+                    "price_uzs": bts_price,
                     "estimated_days": "2-3 kun",
+                    "estimated_hours": route_calc["transit_hours"] * 1.5,
                     "cutoff_time": "17:00",
                     "is_recommended": False,
-                    "badge": "Iqtisodiy",
-                    "features": ["Qulay narx", "Katta o'lchamli yuklar"]
+                    "badge": "Iqtisodiy kargo",
+                    "features": ["Qulay narx", "Katta o'lchamli yuklar", "Ombor qabul punkti", f"Masofa: {dist} km"]
                 },
                 {
                     "carrier_code": "uzpost",
                     "carrier_name": "UzPost (O'zbekiston Pochtasi)",
                     "service_name": "Milliy Pochta Xizmati",
-                    "price_uzs": 20000,
+                    "price_uzs": uzpost_price,
                     "estimated_days": "3-4 kun",
+                    "estimated_hours": route_calc["transit_hours"] * 2.0,
                     "cutoff_time": "16:00",
                     "is_recommended": False,
                     "badge": "Eng keng qamrov",
-                    "features": ["O'zbekiston bo'ylab 900+ bo'limlar"]
+                    "features": ["O'zbekiston bo'ylab 900+ bo'limlar", "Hamyonbop yetkazish", f"Masofa: {dist} km"]
                 }
             ]
-            if is_intra_city:
+
+            if is_intra_city or dist <= 40:
+                yandex_price = round((14000 + dist * 950) / 1000) * 1000
                 rates.insert(0, {
                     "carrier_code": "yandex",
                     "carrier_name": "Yandex Delivery",
                     "service_name": "Tezkor Kuryer / Moto",
-                    "price_uzs": 28000,
+                    "price_uzs": yandex_price,
                     "estimated_days": "1-2 soat",
+                    "estimated_hours": 1.5,
                     "cutoff_time": "23:00",
                     "is_recommended": True,
                     "badge": "Shahar ichida eng tez",
-                    "features": ["Shahar ichida 2 soatda", "Xaritada jonli kuryer"]
+                    "features": ["Shahar ichida 2 soatda", "Xaritada jonli kuryer", f"Masofa: {dist} km"]
                 })
 
             self.send_response(200)
@@ -520,6 +613,7 @@ class UzTrackHandler(http.server.SimpleHTTPRequestHandler):
                 "origin": origin,
                 "destination": dest,
                 "weight_kg": weight,
+                "route_calculation": route_calc,
                 "rates": rates
             }).encode('utf-8'))
             return
@@ -537,6 +631,13 @@ class UzTrackHandler(http.server.SimpleHTTPRequestHandler):
                 {"code": "yandex", "name": "Yandex Delivery", "phone": "+998712003344"}
             ]
             self.wfile.write(json.dumps({"carriers": carriers}).encode('utf-8'))
+            return
+
+        # Documentation Redirect
+        if parsed.path in ["/docs", "/v1/docs", "/documentation"]:
+            self.send_response(302)
+            self.send_header('Location', '/docs.html')
+            self.end_headers()
             return
 
         # API: GET /health
@@ -779,6 +880,101 @@ class UzTrackHandler(http.server.SimpleHTTPRequestHandler):
                 }).encode('utf-8'))
             else:
                 self.send_response(404)
+                self.end_headers()
+            return
+
+        # SUPPLY SIDE API: POST /v1/carrier/manifests (Couriers Query & Acknowledge Pickup Manifests)
+        if parsed.path == "/v1/carrier/manifests":
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
+            data = json.loads(body.decode('utf-8')) if body else {}
+
+            carrier_code = data.get("carrier_code", "fargo").lower()
+            carrier_shipments = [s for s in shipments.values() if s.get("carrier", {}).get("code") == carrier_code]
+
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "carrier_code": carrier_code,
+                "manifest_id": f"MNF-{carrier_code.upper()}-{int(time.time())}",
+                "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "total_parcels": len(carrier_shipments),
+                "parcels": carrier_shipments
+            }).encode('utf-8'))
+            return
+
+        # SUPPLY SIDE API: POST /v1/carrier/events (Couriers Push Checkpoint Telemetry to Engine)
+        if parsed.path == "/v1/carrier/events":
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+            data = json.loads(body.decode('utf-8'))
+
+            code = data.get("tracking_code")
+            raw_status = data.get("status", "IN_TRANSIT").upper()
+            checkpoint_name = data.get("checkpoint_name", "Markaziy Saralash Punkti")
+
+            if code in shipments:
+                s = shipments[code]
+                s["status"] = raw_status
+                if data.get("lat") and data.get("lng"):
+                    s["current_location"]["lat"] = float(data.get("lat"))
+                    s["current_location"]["lng"] = float(data.get("lng"))
+                if data.get("city"):
+                    s["current_location"]["city"] = data.get("city")
+                s["current_location"]["hub"] = checkpoint_name
+                s["current_location"]["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+                s["timeline"].insert(0, {
+                    "code": raw_status,
+                    "title_uz": f"Kuryer voqeasi: {checkpoint_name}",
+                    "title_ru": f"Событие курьера: {checkpoint_name}",
+                    "title_en": f"Courier Event: {checkpoint_name}",
+                    "description_uz": data.get("description", f"Jo'natma {checkpoint_name} nazoratidan o'tkazildi."),
+                    "description_ru": data.get("description", f"Посылка прошла пункт {checkpoint_name}."),
+                    "description_en": data.get("description", f"Package scanned at {checkpoint_name}."),
+                    "location_name": checkpoint_name,
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                })
+
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True, "tracking_code": code, "status": s["status"]}).encode('utf-8'))
+            else:
+                self.send_response(404)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": True, "message": "Shipment not found"}).encode('utf-8'))
+            return
+
+        # SUPPLY SIDE API: POST /v1/carrier/inspections (Couriers Upload Hub Quality Inspection Photos)
+        if parsed.path == "/v1/carrier/inspections":
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+            data = json.loads(body.decode('utf-8'))
+
+            code = data.get("tracking_code")
+            photo_url = data.get("photo_url")
+            caption_uz = data.get("caption_uz", "Omborda tovar qadog'i va butunligi tekshirildi (验货照)")
+
+            if code in shipments and photo_url:
+                s = shipments[code]
+                if "inspection_photos" not in s:
+                    s["inspection_photos"] = []
+                s["inspection_photos"].insert(0, {
+                    "url": photo_url,
+                    "thumb": photo_url,
+                    "caption_uz": caption_uz,
+                    "caption_ru": data.get("caption_ru", caption_uz),
+                    "caption_en": data.get("caption_en", caption_uz)
+                })
+
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True, "inspection_count": len(s["inspection_photos"])}).encode('utf-8'))
+            else:
+                self.send_response(400)
                 self.end_headers()
             return
 
