@@ -6,11 +6,15 @@ Mirrors the Go core REST API and serves the interactive 3D cartoon tracking fron
 
 import http.server
 import json
+import mimetypes
 import os
 import re
 import socketserver
 import time
 from urllib.parse import urlparse
+
+mimetypes.add_type('application/json', '.geojson')
+mimetypes.add_type('application/json', '.json')
 
 PORT = 8080
 PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "public")

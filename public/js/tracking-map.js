@@ -60,14 +60,17 @@ class UzTrackMap {
   setTheme(theme) {
     this.currentTheme = theme;
     const styleUrl = theme === 'dark' 
-      ? 'https://tiles.openfreemap.org/styles/dark' 
-      : 'https://tiles.openfreemap.org/styles/positron';
+      ? '/data/style-dark.json' 
+      : '/data/style-positron.json';
     
     if (this.map) {
       this.map.setStyle(styleUrl);
-      this.map.once('style.load', () => {
+      this.map.once('style.load', async () => {
+        await this.renderUzbekistanMask();
         this.filterClutterLabels();
         this.renderRoadPath();
+        this.renderPinduoduoBadges();
+        this.renderVehicle();
       });
     }
   }
@@ -78,27 +81,83 @@ class UzTrackMap {
     this.setupEvents();
   }
 
+  // Determines whether a vector or raster tile falls within Uzbekistan's bounding box.
+  // Tiles outside Uzbekistan are blocked immediately so the browser does not load or cache other countries.
+  isTileWithinUzbekistan(url) {
+    const match = url.match(/\/(\d+)\/(\d+)\/(\d+)\.(pbf|png|jpg|webp)/i);
+    if (!match) return true; // Non-tile resources (glyphs, fonts, sprites) proceed normally
+    const z = parseInt(match[1], 10);
+    const x = parseInt(match[2], 10);
+    const y = parseInt(match[3], 10);
+
+    // Any request below zoom 5 covers whole continents/world - block to prevent global tile caching
+    if (z < 5) return false;
+
+    // Web Mercator tile bounds conversion
+    const n = Math.PI - (2.0 * Math.PI * y) / Math.pow(2, z);
+    const maxLat = (180.0 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+    const s = Math.PI - (2.0 * Math.PI * (y + 1)) / Math.pow(2, z);
+    const minLat = (180.0 / Math.PI) * Math.atan(0.5 * (Math.exp(s) - Math.exp(-s)));
+    const minLng = (x / Math.pow(2, z)) * 360.0 - 180.0;
+    const maxLng = ((x + 1) / Math.pow(2, z)) * 360.0 - 180.0;
+
+    // Uzbekistan geographic bbox (SW: [55.97, 37.18], NE: [73.15, 45.56]) with safe tolerance:
+    const UZ_MIN_LNG = 55.5;
+    const UZ_MAX_LNG = 73.5;
+    const UZ_MIN_LAT = 37.0;
+    const UZ_MAX_LAT = 46.0;
+
+    // Reject tiles that do not overlap Uzbekistan
+    return !(
+      maxLng < UZ_MIN_LNG ||
+      minLng > UZ_MAX_LNG ||
+      maxLat < UZ_MIN_LAT ||
+      minLat > UZ_MAX_LAT
+    );
+  }
+
   initMap() {
     const isCity = this.trackingCode === 'UZ99800112233';
     const initialCenter = isCity ? [69.2401, 41.2995] : [68.0, 40.4];
     const initialZoom = isCity ? 12.8 : 7.2;
 
     const mapStyle = this.currentTheme === 'dark'
-      ? 'https://tiles.openfreemap.org/styles/dark'
-      : 'https://tiles.openfreemap.org/styles/positron';
+      ? '/data/style-dark.json'
+      : '/data/style-positron.json';
 
-    // Clean, minimalist vector map (Adapts to Light / Dark, Pinduoduo/Taobao style)
+    // Strict Uzbekistan Geographic Bounds (SW, NE)
+    // MapLibre hard-locks panning and requests only inside these bounds
+    const UZ_BOUNDS = [
+      [55.5, 37.0], // Southwest [lng, lat]
+      [73.5, 46.0]  // Northeast [lng, lat]
+    ];
+
+    // Clean, minimalist vector map strictly isolated to Uzbekistan
     this.map = new maplibregl.Map({
       container: this.containerId,
       style: mapStyle,
       center: initialCenter,
       zoom: initialZoom,
-      pitch: 0, // Flat clean overview matching Pinduoduo screenshots
+      minZoom: 5.5,
+      maxZoom: 18,
+      maxBounds: UZ_BOUNDS,
+      maxBoundsViscosity: 1.0, // Strictly locks map panning so users cannot pan outside Uzbekistan
+      pitch: 0,
       bearing: 0,
-      attributionControl: false // Disable the (i) info button and attribution overlay on map canvas
+      attributionControl: false,
+      transformRequest: (url, resourceType) => {
+        if (resourceType === 'Tile') {
+          if (!this.isTileWithinUzbekistan(url)) {
+            // Drop request: returns empty protobuf so other countries' tiles are NOT fetched or cached
+            return { url: 'data:application/x-protobuf;base64,' };
+          }
+        }
+        return { url };
+      }
     });
 
-    this.map.on('load', () => {
+    this.map.on('load', async () => {
+      await this.renderUzbekistanMask();
       this.filterClutterLabels();
       this.renderRoadPath();
       this.renderPinduoduoBadges();
@@ -107,20 +166,65 @@ class UzTrackMap {
     });
   }
 
-  // Filter out minor labels (neighborhoods, hamlets, minor streets) to match Pinduoduo screenshot
+  // Renders solid outer mask covering everything outside Uzbekistan and adds national border outline
+  async renderUzbekistanMask() {
+    if (!this.map) return;
+
+    let maskData = window.UZ_MASK_DATA;
+
+    if (!maskData) {
+      try {
+        const res = await fetch('/data/uzbekistan-mask.json');
+        if (res.ok) maskData = await res.json();
+      } catch (e) {
+        console.warn('Could not fetch uzbekistan-mask.json:', e);
+      }
+    }
+
+    if (!maskData) return;
+
+    // Remove existing mask layers & sources if already present
+    if (this.map.getLayer('uz-world-mask-layer')) this.map.removeLayer('uz-world-mask-layer');
+    if (this.map.getLayer('uz-boundary-glow-layer')) this.map.removeLayer('uz-boundary-glow-layer');
+    if (this.map.getLayer('uz-boundary-line-layer')) this.map.removeLayer('uz-boundary-line-layer');
+    if (this.map.getSource('uz-world-mask-source')) this.map.removeSource('uz-world-mask-source');
+    if (this.map.getSource('uz-boundary-source')) this.map.removeSource('uz-boundary-source');
+
+    // 1. Add Outer Mask Source & Layer (Masks all foreign countries with clean canvas background)
+    this.map.addSource('uz-world-mask-source', {
+      type: 'geojson',
+      data: maskData
+    });
+
+    const isDark = this.currentTheme === 'dark';
+    const maskBgColor = isDark ? '#0b0f19' : '#f1f5f9';
+
+    this.map.addLayer({
+      id: 'uz-world-mask-layer',
+      type: 'fill',
+      source: 'uz-world-mask-source',
+      paint: {
+        'fill-color': maskBgColor,
+        'fill-opacity': 1.0
+      }
+    });
+  }
+
+  // Filter out minor labels and country-level text of foreign nations
   filterClutterLabels() {
     if (!this.map) return;
     const layers = this.map.getStyle().layers || [];
 
     layers.forEach(layer => {
       const id = layer.id.toLowerCase();
-      // Hide minor neighborhood and small hamlet labels, leaving only City and District names
+      // Hide minor neighborhood and small hamlet labels, and country labels
       if (id.includes('neighborhood') || 
           id.includes('suburb') || 
           id.includes('hamlet') || 
           id.includes('poi') || 
           id.includes('minor') || 
-          id.includes('residential')) {
+          id.includes('residential') ||
+          id.includes('country')) {
         try {
           this.map.setLayoutProperty(layer.id, 'visibility', 'none');
         } catch (e) {}
