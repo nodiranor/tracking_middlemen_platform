@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UzTrack - Pinduoduo Style Universal Logistics Tracking</title>
+  
+  <!-- Inter Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- MapLibre GL CSS -->
+  <link href="https://unpkg.com/maplibre-gl@4.1.1/dist/maplibre-gl.css" rel="stylesheet" />
+  
+  <!-- Pinduoduo-inspired UI Styling -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Top App Navigation (Pinduoduo Mobile Header) -->
+  <header class="pdd-header">
+    <div class="pdd-header-inner">
+      <div class="header-left">
+        <button class="nav-circle-btn" title="Orqaga" onclick="window.history.back()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <div class="pdd-brand">
+          <span class="pdd-badge">UzTrack</span>
+          <span id="header-status-title" class="pdd-status-text">Delivered</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Demo Switcher -->
+        <select id="demo-carrier-select" class="header-select">
+          <option value="UZ77019283401">Fargo: Toshkent → Samarqand</option>
+          <option value="UZ99800112233">Yandex: Toshkent Shahar Ichida</option>
+        </select>
+
+        <!-- Customer Brand Theme Schema Switcher -->
+        <select id="brand-select" class="header-select" title="Mijoz Brenda Dizayni (Theme Schema)">
+          <option value="pdd">Brend: Standart (PDD Yashil)</option>
+          <option value="uzum">Brend: Uzum Market (Binafsha)</option>
+          <option value="olx">Brend: OLX.uz (Firuzarang/Teal)</option>
+          <option value="asaxiy">Brend: Asaxiy (Moviy/Blue)</option>
+          <option value="zoodmall">Brend: Zoodmall (To'q sariq)</option>
+          <option value="yandex">Brend: Yandex (Qizil/Red)</option>
+        </select>
+
+        <!-- Language Switcher -->
+        <select id="lang-select" class="header-select">
+          <option value="uz">O'zbekcha</option>
+          <option value="ru">Русский</option>
+          <option value="en">English</option>
+        </select>
+
+        <!-- Dark / Light Mode Switcher -->
+        <button id="btn-toggle-theme" class="nav-circle-btn" title="Tun / Kun rejimi">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
+        <button class="header-pill-btn" title="Mijozlar xizmati">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+          </svg>
+          <span>Support</span>
+        </button>
+
+        <!-- Share Button (Pinduoduo Header Style) -->
+        <button id="btn-share" class="nav-circle-btn" title="Ulashish / Share">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+            <polyline points="16 6 12 2 8 6"></polyline>
+            <line x1="12" y1="2" x2="12" y2="15"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Viewport Layout -->
+  <main class="pdd-main-container">
+    
+    <!-- Top: Clean Pinduoduo Map Canvas -->
+    <div class="pdd-map-wrapper">
+      <div id="map-viewport"></div>
+
+      <!-- Real Road Hourly Simulation Action (Floating) -->
+      <div class="floating-sim-control">
+        <button id="btn-simulate-hour" class="pdd-sim-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 19 22 12 13 5 13 19"></polygon>
+            <polygon points="2 19 11 12 2 5 2 19"></polygon>
+          </svg>
+          <span>+1 Soat Oldinga (Jonli Yangilanish)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bottom: Pinduoduo Card Drawer (Delivery Info & Order Details) -->
+    <div class="pdd-card-drawer">
+      
+      <!-- Card 1: Carrier & Tracking Code Bar (Pinduoduo Style) -->
+      <div class="pdd-card pdd-carrier-row">
+        <div class="carrier-left">
+          <img id="product-thumb" class="product-thumb" src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=120&q=80" alt="Product Thumbnail">
+          <div class="carrier-details">
+            <span id="carrier-name-tag" class="carrier-green-label">Fargo Express:</span>
+            <span id="tracking-number-text" class="tracking-number-code">UZ77019283401</span>
+          </div>
+        </div>
+        <button id="btn-copy-tracking" class="pdd-copy-btn">Copy</button>
+      </div>
+
+      <!-- Card 2: Courier Contact Row -->
+      <div class="pdd-card pdd-courier-row">
+        <div class="courier-left">
+          <div class="courier-avatar-circle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
+          <div>
+            <div id="courier-name-display" class="courier-title">Jasur Aliyev (Kuryer)</div>
+            <div id="courier-phone-display" class="courier-subtitle">+998 90 123 45 67</div>
+          </div>
+        </div>
+        <div class="courier-actions">
+          <button class="pdd-secondary-btn" id="btn-tip-courier">Tip</button>
+          <a id="btn-call-courier" href="tel:+998901234567" class="pdd-action-pill-btn">Call</a>
+        </div>
+      </div>
+
+      <!-- Card 3: Order Metadata & Destination Address -->
+      <div class="pdd-card pdd-order-row">
+        <div class="order-header-line">
+          <div class="order-icon-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="3" width="15" height="13"></rect>
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+              <circle cx="5.5" cy="18.5" r="2.5"></circle>
+              <circle cx="18.5" cy="18.5" r="2.5"></circle>
+            </svg>
+            <span class="order-no-label">Order No.:</span>
+            <span id="order-no-display" class="order-no-value">261020-412813934891256</span>
+          </div>
+          <button id="btn-copy-order" class="pdd-copy-btn">Copy</button>
+        </div>
+
+        <div class="order-dest-line">
+          <span class="dest-label">To:</span>
+          <span id="dest-address-display" class="dest-value">Samarqand shahar, Registon markaziy hududi 14-uy</span>
+        </div>
+      </div>
+
+      <!-- Card 4: Pinduoduo Vertical Milestone Timeline -->
+      <div class="pdd-card pdd-timeline-card">
+        
+        <!-- Active / Latest Status Banner -->
+        <div class="active-milestone-box">
+          <div class="active-status-header">
+            <div class="green-check-dot">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <span id="latest-status-name" class="active-status-title">In Transit</span>
+            <span id="latest-status-time" class="active-status-date">2026-10-27 08:30:00</span>
+          </div>
+          <div id="latest-status-note" class="active-status-body">
+            Jo'natma Jizzax M39 tranzit punkti orqali Samarqand tomon harakatlanmoqda. Kuryer mas'ul: <a href="tel:+998901234567" class="courier-phone-link">Jasur Aliyev (901234567)</a>. Savollar bo'lsa rasmiy call-center: <a href="tel:0712000000" class="courier-phone-link">071-200-00-00</a>.
+          </div>
+
+          <!-- Warehouse / Cargo Inspection Real Photos (集运仓实拍验货照) -->
+          <div id="warehouse-photos-container" class="warehouse-photos-wrapper">
+            <div class="photos-label">Ombor qabul qilish fotosuratlari (集运仓实拍验货照):</div>
+            <div class="photos-grid" id="warehouse-photos-grid">
+              <div class="photo-item" onclick="openPhotoModal('https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80', 'Jo\'natma qadog\'i va mahsulot tekshiruvi')">
+                <img src="https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=300&q=80" alt="Parcel Inspection Photo 1">
+                <span class="photo-zoom-tag">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+                </span>
+              </div>
+              <div class="photo-item" onclick="openPhotoModal('https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80', 'Oyoq kiyim sifat nazorati (Ombor 139)')">
+                <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=300&q=80" alt="Parcel Inspection Photo 2">
+                <span class="photo-zoom-tag">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Historical Collapsible Milestones List -->
+        <div id="timeline-collapsible-wrapper" class="timeline-collapsible expanded">
+          <ul id="timeline-list" class="pdd-timeline-list">
+            <!-- Rendered dynamically by JS -->
+          </ul>
+        </div>
+
+        <!-- Collapse / Expand Footer Button -->
+        <button id="btn-toggle-timeline-collapse" class="timeline-collapse-btn">
+          <span id="collapse-btn-text">Collapse</span>
+          <svg id="collapse-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+        </button>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Toast Notification for Copying -->
+  <div id="toast-message" class="toast-popup">Tracking number copied</div>
+
+  <!-- Floating Scroll To Top Button (Pinduoduo 顶部 Button) -->
+  <button id="btn-scroll-top" class="pdd-scroll-top-btn" title="Tepaga / Top">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+    <span>Tepaga</span>
+  </button>
+
+  <!-- Parcel Photo Inspection Lightbox Modal -->
+  <div id="photo-modal" class="photo-modal-backdrop" onclick="closePhotoModal(event)">
+    <div class="photo-modal-card" onclick="event.stopPropagation()">
+      <div class="photo-modal-header">
+        <span id="modal-title" class="photo-modal-title">Ombor tekshiruvi (验货照片)</span>
+        <button class="modal-close-btn" onclick="closePhotoModal()">&times;</button>
+      </div>
+      <div class="photo-modal-body">
+        <img id="modal-img" src="" alt="Parcel Inspection Preview">
+      </div>
+      <div id="modal-caption" class="photo-modal-caption"></div>
+    </div>
+  </div>
+
+  <!-- MapLibre GL JS -->
+  <script src="https://unpkg.com/maplibre-gl@4.1.1/dist/maplibre-gl.js"></script>
+  
+  <!-- Pinduoduo-Style Map & Routing Engine -->
+  <script src="js/tracking-map.js"></script>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code') || 'UZ77019283401';
+    const lang = params.get('lang') || 'uz';
+    let brand = params.get('brand') || 'pdd';
+    let theme = params.get('theme') || 'light';
+    const customPrimary = params.get('primary');
+
+    // Apply Brand Schema and Theme Mode to DOM
+    document.body.setAttribute('data-brand', brand);
+    document.body.setAttribute('data-theme', theme);
+
+    if (customPrimary) {
+      document.documentElement.style.setProperty('--brand-primary', customPrimary);
+    }
+
+    const tracker = new UzTrackMap('map-viewport', {
+      trackingCode: code,
+      lang: lang,
+      brand: brand,
+      theme: theme,
+      primaryColor: customPrimary,
+      apiUrl: window.location.origin
+    });
+
+    // Customer Brand Theme Schema Switcher
+    const brandSelect = document.getElementById('brand-select');
+    if (brandSelect) {
+      brandSelect.value = brand;
+      brandSelect.addEventListener('change', (e) => {
+        brand = e.target.value;
+        document.body.setAttribute('data-brand', brand);
+        tracker.setBrand(brand);
+      });
+    }
+
+    // Dark / Light Theme Toggle
+    const themeBtn = document.getElementById('btn-toggle-theme');
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => {
+        theme = (theme === 'dark') ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', theme);
+        tracker.setTheme(theme);
+      });
+    }
+
+    // Demo Switcher
+    const demoSelect = document.getElementById('demo-carrier-select');
+    if (demoSelect) {
+      demoSelect.value = code;
+      demoSelect.addEventListener('change', (e) => {
+        window.location.href = `?code=${e.target.value}&lang=${lang}&brand=${brand}&theme=${theme}`;
+      });
+    }
+
+    // Copy to clipboard helper
+    function copyText(text, message) {
+      navigator.clipboard.writeText(text).then(() => {
+        const toast = document.getElementById('toast-message');
+        if (toast) {
+          toast.innerText = message || 'Copied to clipboard';
+          toast.classList.add('visible');
+          setTimeout(() => toast.classList.remove('visible'), 2200);
+        }
+      });
+    }
+
+    document.getElementById('btn-copy-tracking')?.addEventListener('click', () => {
+      const codeText = document.getElementById('tracking-number-text')?.innerText || code;
+      copyText(codeText, 'Tracking number copied');
+    });
+
+    document.getElementById('btn-copy-order')?.addEventListener('click', () => {
+      const orderText = document.getElementById('order-no-display')?.innerText || '';
+      copyText(orderText, 'Order number copied');
+    });
+
+    // Share action
+    document.getElementById('btn-share')?.addEventListener('click', () => {
+      if (navigator.share) {
+        navigator.share({
+          title: 'UzTrack - Kuzatuv',
+          text: `Jo'natma kodi: ${code}`,
+          url: window.location.href
+        }).catch(() => {});
+      } else {
+        copyText(window.location.href, 'Kuzatuv havolasi nusxalandi');
+      }
+    });
+
+    // Scroll to Top (Pinduoduo 顶部 button)
+    const scrollTopBtn = document.getElementById('btn-scroll-top');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 150) {
+        scrollTopBtn?.classList.add('visible');
+      } else {
+        scrollTopBtn?.classList.remove('visible');
+      }
+    });
+
+    scrollTopBtn?.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Photo Inspection Lightbox
+    window.openPhotoModal = function(src, caption) {
+      const modal = document.getElementById('photo-modal');
+      const img = document.getElementById('modal-img');
+      const cap = document.getElementById('modal-caption');
+      if (modal && img) {
+        img.src = src;
+        if (cap) cap.innerText = caption || 'Ombor tekshiruvi';
+        modal.classList.add('active');
+      }
+    };
+
+    window.closePhotoModal = function() {
+      const modal = document.getElementById('photo-modal');
+      if (modal) modal.classList.remove('active');
+    };
+
+    // Timeline Collapse Toggle
+    const toggleCollapseBtn = document.getElementById('btn-toggle-timeline-collapse');
+    const timelineWrapper = document.getElementById('timeline-collapsible-wrapper');
+    const collapseText = document.getElementById('collapse-btn-text');
+    const collapseIcon = document.getElementById('collapse-icon');
+
+    if (toggleCollapseBtn && timelineWrapper) {
+      toggleCollapseBtn.addEventListener('click', () => {
+        const isExpanded = timelineWrapper.classList.toggle('expanded');
+        if (collapseText) collapseText.innerText = isExpanded ? 'Collapse' : 'View More';
+        if (collapseIcon) collapseIcon.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(180deg)';
+      });
+    }
+  </script>
+</body>
+</html>

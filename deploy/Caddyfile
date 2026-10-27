@@ -1,0 +1,26 @@
+# Caddyfile for UzTrack Clearinghouse (Auto SSL + Brotli Compression)
+{
+    email admin@track.uz
+    admin off
+}
+
+:80 {
+    encode zstd gzip
+
+    # Handle CORS for embedding tracking widgets
+    header {
+        Access-Control-Allow-Origin *
+        Access-Control-Allow-Methods "GET, POST, OPTIONS"
+        Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+        X-Content-Type-Options nosniff
+        X-Frame-Options "ALLOWALL"
+    }
+
+    # Reverse proxy to Go application
+    reverse_proxy app:8080 {
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}

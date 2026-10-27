@@ -1,0 +1,961 @@
+/* ==============================================================================
+   UzTrack - Pinduoduo (拼多多) Logistics Tracking Design System
+   Exact pixel-accurate reproduction of Pinduoduo's clean mobile & web tracking UI
+   ============================================================================== */
+
+:root {
+  --brand-primary: #16a34a;          /* Default customer primary (Pinduoduo Emerald Green) */
+  --brand-primary-light: #dcfce7;
+  --brand-primary-dark: #15803d;
+  --brand-primary-rgb: 22, 163, 74;
+  
+  --pdd-green: var(--brand-primary);
+  --pdd-green-light: var(--brand-primary-light);
+  --pdd-green-dark: var(--brand-primary-dark);
+  
+  --pdd-text-main: #111827;
+  --pdd-text-muted: #6b7280;
+  --pdd-text-light: #9ca3af;
+  --pdd-bg-gray: #f3f4f6;
+  --pdd-card-bg: #ffffff;
+  --pdd-border: #e5e7eb;
+  --pdd-phone-blue: #2563eb;
+  --radius-card: 14px;
+}
+
+/* ==============================================================================
+   Customer Brand Presets (Marketplaces & Classifieds in Uzbekistan)
+   ============================================================================== */
+
+/* Uzum Market (Signature Violet/Purple) */
+body[data-brand="uzum"] {
+  --brand-primary: #7000ff;
+  --brand-primary-light: #f3e8ff;
+  --brand-primary-dark: #5800cc;
+  --brand-primary-rgb: 112, 0, 255;
+}
+
+/* OLX.uz (Signature Teal & Cyan) */
+body[data-brand="olx"] {
+  --brand-primary: #002f34;
+  --brand-primary-light: #e0f2fe;
+  --brand-primary-dark: #001f23;
+  --brand-primary-rgb: 0, 47, 52;
+  --brand-accent: #23e5db;
+}
+
+/* Asaxiy (Signature Royal Blue) */
+body[data-brand="asaxiy"] {
+  --brand-primary: #0066ff;
+  --brand-primary-light: #dbeafe;
+  --brand-primary-dark: #0052cc;
+  --brand-primary-rgb: 0, 102, 255;
+}
+
+/* Zoodmall (Signature Orange) */
+body[data-brand="zoodmall"], body[data-brand="zood"] {
+  --brand-primary: #ff6b00;
+  --brand-primary-light: #ffedd5;
+  --brand-primary-dark: #ea580c;
+  --brand-primary-rgb: 255, 107, 0;
+}
+
+/* Yandex Delivery (Signature Red) */
+body[data-brand="yandex"] {
+  --brand-primary: #fc3f1d;
+  --brand-primary-light: #fee2e2;
+  --brand-primary-dark: #dc2626;
+  --brand-primary-rgb: 252, 63, 29;
+}
+
+/* Pinduoduo (Signature Emerald) */
+body[data-brand="pdd"], body[data-brand="pinduoduo"] {
+  --brand-primary: #16a34a;
+  --brand-primary-light: #dcfce7;
+  --brand-primary-dark: #15803d;
+  --brand-primary-rgb: 22, 163, 74;
+}
+
+/* ==============================================================================
+   Customer Dark Theme Adaptation
+   ============================================================================== */
+
+body[data-theme="dark"] {
+  --pdd-bg-gray: #0b0f17;
+  --pdd-card-bg: #151d2c;
+  --pdd-text-main: #f1f5f9;
+  --pdd-text-muted: #94a3b8;
+  --pdd-text-light: #64748b;
+  --pdd-border: #243045;
+}
+
+body[data-theme="dark"] .pdd-header {
+  background: #151d2c;
+  border-bottom-color: #243045;
+}
+
+body[data-theme="dark"] .nav-circle-btn,
+body[data-theme="dark"] .header-select,
+body[data-theme="dark"] .header-pill-btn,
+body[data-theme="dark"] .courier-avatar-circle {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+body[data-theme="dark"] .pdd-sim-btn,
+body[data-theme="dark"] .pdd-copy-btn,
+body[data-theme="dark"] .pdd-secondary-btn,
+body[data-theme="dark"] .pdd-action-pill-btn,
+body[data-theme="dark"] .pdd-scroll-top-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+body[data-theme="dark"] .order-no-value,
+body[data-theme="dark"] .courier-title,
+body[data-theme="dark"] .dest-label {
+  color: #f1f5f9;
+}
+
+body[data-theme="dark"] .dest-value,
+body[data-theme="dark"] .active-status-body,
+body[data-theme="dark"] .timeline-node-content {
+  color: #cbd5e1;
+}
+
+body[data-theme="dark"] .pdd-origin-badge,
+body[data-theme="dark"] .pdd-destination-badge {
+  background: #151d2c;
+  color: #f1f5f9;
+}
+
+body[data-theme="dark"] .photo-modal-card {
+  background: #151d2c;
+  border: 1px solid #334155;
+}
+
+body[data-theme="dark"] .photo-modal-header {
+  border-bottom-color: #334155;
+}
+
+body[data-theme="dark"] .photo-modal-title {
+  color: #f1f5f9;
+}
+
+body[data-theme="dark"] .photo-modal-caption {
+  background: #0f172a;
+  color: #cbd5e1;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  background: var(--pdd-bg-gray);
+  color: var(--pdd-text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==============================================================================
+   Top Navigation Header (Pinduoduo Mobile Header)
+   ============================================================================== */
+
+.pdd-header {
+  background: #ffffff;
+  border-bottom: 1px solid var(--pdd-border);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  padding: 10px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.pdd-header-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-circle-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  border: 1px solid var(--pdd-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #374151;
+  transition: background 0.15s;
+}
+
+.nav-circle-btn:hover {
+  background: #e5e7eb;
+}
+
+.pdd-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pdd-badge {
+  background: #e11d48;
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+}
+
+.pdd-status-text {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--pdd-green);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-select {
+  background: #f9fafb;
+  border: 1px solid var(--pdd-border);
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  outline: none;
+}
+
+.header-pill-btn {
+  background: #f3f4f6;
+  border: 1px solid var(--pdd-border);
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+/* ==============================================================================
+   Main Container Layout
+   ============================================================================== */
+
+.pdd-main-container {
+  max-width: 680px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Map Viewport Area */
+.pdd-map-wrapper {
+  width: 100%;
+  height: 380px;
+  position: relative;
+  background: #f3f4f6;
+  border-bottom: 1px solid var(--pdd-border);
+}
+
+#map-viewport {
+  width: 100%;
+  height: 100%;
+}
+
+/* Floating Hourly Simulation Action */
+.floating-sim-control {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 400;
+}
+
+.pdd-sim-btn {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  color: var(--pdd-green-dark);
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s;
+}
+
+.pdd-sim-btn:hover {
+  background: #ffffff;
+  border-color: var(--pdd-green);
+  transform: translateY(-1px);
+}
+
+/* ==============================================================================
+   Pinduoduo Map Markers & Badges
+   ============================================================================== */
+
+/* Origin Badge (发 金华市 style) */
+.pdd-origin-badge {
+  background: #ffffff;
+  border: 1px solid #d1fae5;
+  border-radius: 6px;
+  padding: 3px 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.pdd-origin-tag {
+  background: #86efac;
+  color: #065f46;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.pdd-origin-point {
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.35);
+}
+
+/* Destination / Status Bubble (已签收 / Delivered style) */
+.pdd-destination-badge {
+  background: #ffffff;
+  border: 1.5px solid var(--pdd-green);
+  border-radius: 8px;
+  padding: 4px 10px;
+  box-shadow: 0 6px 14px rgba(22, 163, 74, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 800;
+  color: #111827;
+  position: relative;
+}
+
+.pdd-dest-icon {
+  width: 20px;
+  height: 20px;
+  background: var(--pdd-green);
+  color: white;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+/* Pulsing radar point */
+.pdd-radar-point {
+  width: 14px;
+  height: 14px;
+  background: var(--pdd-green);
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.35);
+  animation: pdd-pulse 1.8s infinite;
+}
+
+@keyframes pdd-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.6); }
+  70% { box-shadow: 0 0 0 10px rgba(22, 163, 74, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+
+/* ==============================================================================
+   Pinduoduo Bottom Sheet Card Drawer
+   ============================================================================== */
+
+.pdd-card-drawer {
+  padding: 12px 14px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pdd-card {
+  background: var(--pdd-card-bg);
+  border-radius: var(--radius-card);
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Row 1: Carrier & Tracking Number Bar */
+.pdd-carrier-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.carrier-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.product-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid var(--pdd-border);
+}
+
+.carrier-details {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.carrier-green-label {
+  font-weight: 800;
+  color: var(--pdd-green);
+}
+
+.tracking-number-code {
+  font-weight: 700;
+  color: var(--pdd-text-main);
+  letter-spacing: 0.2px;
+}
+
+.pdd-copy-btn {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pdd-copy-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* Row 2: Courier Contact Bar */
+.pdd-courier-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.courier-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.courier-avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563;
+}
+
+.courier-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #111827;
+}
+
+.courier-subtitle {
+  font-size: 12px;
+  color: var(--pdd-text-muted);
+}
+
+.courier-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pdd-secondary-btn {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.pdd-action-pill-btn {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Row 3: Order Info & Address */
+.pdd-order-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.order-header-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.order-icon-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.order-no-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.order-no-value {
+  font-weight: 700;
+  color: #111827;
+}
+
+.order-dest-line {
+  font-size: 12px;
+  color: #4b5563;
+  line-height: 1.4;
+  padding-left: 22px;
+}
+
+.dest-label {
+  font-weight: 700;
+  color: #111827;
+  margin-right: 4px;
+}
+
+.dest-value {
+  color: #374151;
+}
+
+/* Row 4: Timeline Milestones (Pinduoduo Vertical Flow) */
+.pdd-timeline-card {
+  padding: 16px;
+}
+
+/* Active Highlighted Milestone Box */
+.active-milestone-box {
+  margin-bottom: 16px;
+}
+
+.active-status-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.green-check-dot {
+  width: 18px;
+  height: 18px;
+  background: var(--pdd-green);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.active-status-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--pdd-green);
+}
+
+.active-status-date {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.active-status-body {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.5;
+  padding-left: 26px;
+}
+
+.courier-phone-link {
+  color: var(--pdd-phone-blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.courier-phone-link:hover {
+  text-decoration: underline;
+}
+
+/* Historical Milestones (Collapsible) */
+.timeline-collapsible {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: all 0.35s ease;
+}
+
+.timeline-collapsible.expanded {
+  max-height: 1200px;
+  opacity: 1;
+}
+
+.pdd-timeline-list {
+  list-style: none;
+  position: relative;
+  padding-left: 26px;
+}
+
+.pdd-timeline-list::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 10px;
+  bottom: 10px;
+  width: 1.5px;
+  background: #e5e7eb;
+}
+
+.timeline-node-item {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.timeline-node-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-node-dot {
+  position: absolute;
+  left: -22px;
+  top: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  border: 2px solid white;
+}
+
+.timeline-node-time {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.timeline-node-content {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.4;
+}
+
+/* Collapse / Expand Toggle Button */
+.timeline-collapse-btn {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--pdd-border);
+  padding: 10px 0 0;
+  margin-top: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.timeline-collapse-btn svg {
+  transition: transform 0.25s ease;
+}
+
+/* ==============================================================================
+   Floating Toast Popup (Pinduoduo Black Toast)
+   ============================================================================== */
+
+.toast-popup {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(17, 24, 39, 0.9);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.25s ease;
+  z-index: 2000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.toast-popup.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ==============================================================================
+   Warehouse Inspection Real Photos (集运仓实拍验货照)
+   ============================================================================== */
+
+.warehouse-photos-wrapper {
+  margin-top: 12px;
+  padding-left: 26px;
+}
+
+.photos-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.photos-grid {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.photo-item {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--pdd-border);
+  cursor: pointer;
+  background: #f9fafb;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.photo-item:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.photo-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-zoom-tag {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==============================================================================
+   Floating Scroll-To-Top Button (Pinduoduo 顶部 Button)
+   ============================================================================== */
+
+.pdd-scroll-top-btn {
+  position: fixed;
+  right: 20px;
+  bottom: 30px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid var(--pdd-border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  cursor: pointer;
+  color: #4b5563;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: all 0.25s ease;
+  z-index: 1500;
+}
+
+.pdd-scroll-top-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.pdd-scroll-top-btn:hover {
+  background: #f9fafb;
+  color: var(--pdd-green);
+}
+
+.pdd-scroll-top-btn span {
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ==============================================================================
+   Parcel Inspection Lightbox Modal
+   ============================================================================== */
+
+.photo-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  padding: 16px;
+}
+
+.photo-modal-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.photo-modal-card {
+  background: #ffffff;
+  border-radius: 12px;
+  max-width: 480px;
+  width: 100%;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  animation: modal-pop 0.25s ease;
+}
+
+@keyframes modal-pop {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.photo-modal-header {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--pdd-border);
+}
+
+.photo-modal-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.modal-close-btn:hover {
+  color: #111827;
+}
+
+.photo-modal-body {
+  width: 100%;
+  max-height: 380px;
+  background: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-modal-body img {
+  max-width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+}
+
+.photo-modal-caption {
+  padding: 10px 16px;
+  font-size: 12px;
+  color: #4b5563;
+  background: #f9fafb;
+}

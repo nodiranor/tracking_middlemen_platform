@@ -1,0 +1,27 @@
+[Unit]
+Description=UzTrack (UZ-LTS) Unified Logistics Platform
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=simple
+User=uztrack
+Group=uztrack
+WorkingDirectory=/opt/uztrack
+ExecStart=/opt/uztrack/bin/uztrack-server
+Restart=always
+RestartSec=3
+Environment=PORT=8080
+Environment=PUBLIC_DIR=/opt/uztrack/public
+Environment=DATABASE_URL=postgres://uztrack:uztrack_secret@localhost:5432/uztrack_db?sslmode=disable
+Environment=REDIS_URL=redis://localhost:6379
+Environment=TZ=Asia/Tashkent
+
+# Security Sandboxing for LXC
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
