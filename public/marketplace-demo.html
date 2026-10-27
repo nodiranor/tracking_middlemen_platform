@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marketplace Integration Demo - Multi-Carrier Shipping & Live Tracking</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --mp-primary: #002f34;      /* Default: OLX Teal */
+      --mp-accent: #23e5db;
+      --mp-bg: #f2f4f5;
+      --mp-card-bg: #ffffff;
+      --mp-text-main: #002f34;
+      --mp-text-muted: #7f9799;
+      --mp-border: #d8dfe0;
+      --radius: 12px;
+    }
+
+    body[data-marketplace="uzum"] {
+      --mp-primary: #7000ff;
+      --mp-accent: #ff0055;
+      --mp-bg: #f8f6fb;
+      --mp-text-main: #1f1b2e;
+      --mp-text-muted: #8b8899;
+      --mp-border: #e9e5f3;
+    }
+
+    body[data-marketplace="asaxiy"] {
+      --mp-primary: #0066ff;
+      --mp-accent: #ff6b00;
+      --mp-bg: #f4f7fb;
+      --mp-text-main: #111e38;
+      --mp-text-muted: #74829c;
+      --mp-border: #dbe4f0;
+    }
+
+    body[data-marketplace="zoodmall"] {
+      --mp-primary: #ff6b00;
+      --mp-accent: #16a34a;
+      --mp-bg: #fffaf5;
+      --mp-text-main: #2b180a;
+      --mp-text-muted: #9c8270;
+      --mp-border: #f5e4d5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--mp-bg);
+      color: var(--mp-text-main);
+      padding-bottom: 60px;
+    }
+
+    /* Marketplace Navigation Header */
+    .mp-header {
+      background: var(--mp-primary);
+      color: #ffffff;
+      padding: 12px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .mp-header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .mp-logo-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mp-logo {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+
+    .mp-tagline {
+      font-size: 11px;
+      background: rgba(255,255,255,0.2);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .mp-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .mp-select {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+    .mp-select option {
+      color: #111827;
+      background: #ffffff;
+    }
+
+    /* Main Container Grid */
+    .demo-container {
+      max-width: 1200px;
+      margin: 24px auto;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .demo-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Left Column: Order Flow & Engine Orchestration */
+    .flow-column {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--mp-card-bg);
+      border: 1px solid var(--mp-border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .badge-step {
+      font-size: 11px;
+      font-weight: 800;
+      background: var(--mp-primary);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+
+    /* Product Item Card */
+    .product-row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .product-img {
+      width: 80px;
+      height: 80px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid var(--mp-border);
+    }
+
+    .product-info h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .product-info p {
+      font-size: 12px;
+      color: var(--mp-text-muted);
+      margin-bottom: 6px;
+    }
+    .product-price {
+      font-size: 16px;
+      font-weight: 800;
+      color: #16a34a;
+    }
+
+    /* Multi-Carrier Rate Cards */
+    .rates-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .rate-card {
+      border: 1.5px solid var(--mp-border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: #fafbfc;
+    }
+
+    .rate-card:hover {
+      border-color: var(--mp-primary);
+      background: #ffffff;
+    }
+
+    .rate-card.selected {
+      border-color: var(--mp-primary);
+      background: #ffffff;
+      box-shadow: 0 0 0 2px var(--mp-primary);
+    }
+
+    .rate-carrier-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .rate-radio {
+      accent-color: var(--mp-primary);
+      width: 16px;
+      height: 16px;
+    }
+
+    .rate-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--mp-text-main);
+    }
+    .rate-service {
+      font-size: 11px;
+      color: var(--mp-text-muted);
+    }
+
+    .rate-price-tag {
+      text-align: right;
+    }
+    .rate-amount {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--mp-text-main);
+    }
+    .rate-eta {
+      font-size: 11px;
+      color: #16a34a;
+      font-weight: 600;
+    }
+
+    .rate-badge {
+      font-size: 9px;
+      font-weight: 800;
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
+
+    /* Book Button */
+    .btn-book {
+      width: 100%;
+      background: var(--mp-primary);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.2s;
+    }
+
+    .btn-book:hover {
+      opacity: 0.92;
+    }
+
+    /* Right Column: Live Tracking & Webhook Console */
+    .tracking-column {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Embedded Widget Preview */
+    .widget-container {
+      width: 100%;
+      min-height: 520px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--mp-border);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      background: white;
+    }
+
+    /* Courier Event Simulator Panel */
+    .simulator-card {
+      background: #1e293b;
+      color: #f8fafc;
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+
+    .sim-header {
+      font-size: 13px;
+      font-weight: 800;
+      color: #38bdf8;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sim-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .sim-btn {
+      background: #334155;
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .sim-btn:hover {
+      background: #475569;
+      border-color: #38bdf8;
+    }
+
+    .sim-btn.delivered {
+      background: #065f46;
+      border-color: #10b981;
+      color: #d1fae5;
+    }
+
+    /* Webhook Logs Terminal */
+    .webhook-terminal {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 10px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      max-height: 140px;
+      overflow-y: auto;
+      line-height: 1.4;
+    }
+
+    .webhook-log-line {
+      margin-bottom: 4px;
+    }
+    .log-success { color: #4ade80; }
+    .log-info { color: #38bdf8; }
+    .log-time { color: #64748b; margin-right: 4px; }
+  </style>
+  
+  <!-- UzTrack Universal Embeddable Web Component -->
+  <script src="/widget.js"></script>
+</head>
+<body data-marketplace="olx">
+
+  <!-- Marketplace Header -->
+  <header class="mp-header">
+    <div class="mp-header-inner">
+      <div class="mp-logo-block">
+        <div id="marketplace-name" class="mp-logo">OLX.uz</div>
+        <div id="mp-tagline" class="mp-tagline">OLX Yetkazib berish va Xavfsiz bitim</div>
+      </div>
+
+      <div class="mp-controls">
+        <a href="/" class="mp-select" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.25);">
+          <span>← Pinduoduo Xaritasi</span>
+        </a>
+        <label style="font-size: 12px; font-weight: 600;">Platformani tanlang:</label>
+        <select id="marketplace-switcher" class="mp-select">
+          <option value="olx">OLX.uz (Classifieds)</option>
+          <option value="uzum">Uzum Market (E-Commerce)</option>
+          <option value="asaxiy">Asaxiy.uz (Marketplace)</option>
+          <option value="zoodmall">Zoodmall (Cross-Border)</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="demo-container">
+
+    <!-- Left Column: Checkout & One-API Courier Selection -->
+    <div class="flow-column">
+      
+      <!-- Card 1: Order Details -->
+      <div class="card">
+        <div class="card-title">
+          <span id="order-card-title">Xarid qilingan tovar (Order #OLX-884920)</span>
+          <span class="badge-step">1-Qadam: Buyurtma</span>
+        </div>
+        <div class="product-row">
+          <img id="product-card-img" src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=240&q=80" alt="Apple MacBook Pro" class="product-img">
+          <div class="product-info">
+            <h3 id="product-card-title">Apple MacBook Pro 14" (M3 Pro 18/512GB)</h3>
+            <p id="product-card-seller">Sotuvchi: Alisher V. (Toshkent, Chilonzor 19)</p>
+            <p id="product-card-buyer">Xaridor: Aziz Karimov (Samarqand, Registon)</p>
+            <div id="product-card-price" class="product-price">21,500,000 UZS</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Multi-Carrier Rate Comparison (GET /v1/rates) -->
+      <div class="card">
+        <div class="card-title">
+          <span>Yetkazib berish xizmatini tanlang</span>
+          <span class="badge-step">GET /v1/rates</span>
+        </div>
+        <p style="font-size: 12px; color: var(--mp-text-muted); margin-bottom: 12px;">
+          Mavjud kuryerlik kompaniyalari (Fargo, EMU, BTS, UzPost) tariflari va yetkazish muddatlari:
+        </p>
+        <div class="rates-list" id="rates-container">
+          <!-- Dynamically populated from GET /v1/rates -->
+          <div style="font-size: 12px; color: #64748b;">Tariflar yuklanmoqda...</div>
+        </div>
+      </div>
+
+      <!-- Card 3: One-Click Booking (POST /v1/shipments) -->
+      <div class="card">
+        <div class="card-title">
+          <span>Yagona API orqali bron qilish</span>
+          <span class="badge-step">POST /v1/shipments</span>
+        </div>
+        <p style="font-size: 12px; color: var(--mp-text-muted); margin-bottom: 14px;">
+          Marketplace har bir kuryer bilan alohida integratsiya qilmaydi. Bitta buyurtma tugmasi orqali tanlangan kuryerga yetkazish buyurtmasi ochiladi va xaridor uchun jonli kuzatuv boshlanadi:
+        </p>
+        <button id="btn-book-shipment" class="btn-book">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span id="btn-book-text">Kuryerga yuborish va Kuzatuvni yoqish</span>
+        </button>
+      </div>
+
+      <!-- Card 4: Architecture Explanation -->
+      <div class="card" style="background: #f8fafc; border-style: dashed; border-color: #cbd5e1;">
+        <h4 style="font-size: 13px; font-weight: 800; margin-bottom: 8px; color: #0f172a;">B2B White-Label Dvigatel Arxitekturasi:</h4>
+        <p style="font-size: 12px; color: #475569; line-height: 1.6;">
+          • <strong>100% White-Label (Ko'rinmas Infratuzilma):</strong> Marketplace xaridorlari orqa fondagi dvigatel yoki middleware haqida hech qachon bilishmaydi. Barcha xaritalar, yorliqlar, kuryer ma'lumotlari to'liq Marketplace brendi ostida ko'rinadi.<br>
+          • <strong>Marketplace uchun:</strong> Bitta yagona integratsiya. Uzum, OLX yoki Asaxiy 10 ta kuryer (EMU, BTS, Fargo, UzPost, Yandex) uchun 10 xil API yozmaydi.<br>
+          • <strong>Kuryerlar uchun:</strong> Ular standartlashtirilgan webhook yoki API orqali ulanadi.<br>
+          • <strong>Xaridor uchun:</strong> Kuryer saytiga o'tmasdan, aynan marketplace ichida real yo'llar xaritasi bilan jonli kuzatadi.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Right Column: In-Marketplace Live Tracking & Realtime Webhooks -->
+    <div class="tracking-column">
+      
+      <!-- Live Customer Tracking View inside Marketplace -->
+      <div class="card" style="padding: 16px;">
+        <div class="card-title" style="margin-bottom: 10px;">
+          <span>Mijozning Kuzatuv Ekrani (In-Marketplace View)</span>
+          <span id="active-brand-tag" class="badge-step">Brend: OLX</span>
+        </div>
+        <p style="font-size: 12px; color: var(--mp-text-muted); margin-bottom: 12px;">
+          Quyidagi xarita mijozga marketplace saytidan chiqmagan holda buyurtma holatini ko'rsatadi:
+        </p>
+        
+        <!-- Embed Container with <uz-tracking-view> Web Component -->
+        <div id="embed-wrapper" class="widget-container">
+          <uz-tracking-view id="uz-tracker" tracking-code="UZ88492011223" brand="olx" height="520px"></uz-tracking-view>
+        </div>
+      </div>
+
+      <!-- Interactive Courier Event Simulator & Marketplace Webhook Receiver -->
+      <div class="simulator-card">
+        <div class="sim-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          <span>Kuryer Tizimi Voqealari va Marketplace Webhook Simulyatori</span>
+        </div>
+        <p style="font-size: 11px; color: #94a3b8; margin-bottom: 12px;">
+          Kuryer o'z tizimida holatni yangilaganda, orqa fondagi middleware uni standartlashtiradi, xaritani yangilaydi va marketplacedagi <code>/webhook</code> ga avtomatik xabar beradi:
+        </p>
+
+        <div class="sim-buttons">
+          <button class="sim-btn" onclick="sendCourierWebhook('picked_up', 'Kuryer jo\'natmani sotuvchidan qabul qildi')">1. Qabul qilindi</button>
+          <button class="sim-btn" onclick="sendCourierWebhook('hub_in', 'Sergeli saralash markaziga yetib keldi')">2. Saralashda</button>
+          <button class="sim-btn" onclick="sendCourierWebhook('in_transit', 'Jizzax orqali M39 tranzitida')">3. M39 Tranzit</button>
+          <button class="sim-btn" onclick="sendCourierWebhook('dest_hub', 'Samarqand markaziy qabul markaziga yetdi')">4. Samarqandda</button>
+          <button class="sim-btn" onclick="sendCourierWebhook('out_for_delivery', 'Kuryer xaridor tomon yo\'lga chiqdi')">5. Kuryerda</button>
+          <button class="sim-btn delivered" onclick="sendCourierWebhook('delivered', 'Buyurtma xaridorga muvaffaqiyatli topshirildi!')">6. Topshirildi (Done)</button>
+        </div>
+
+        <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">Marketplace Webhook Qabul Qilish Qaydnomasi:</div>
+        <div id="webhook-terminal" class="webhook-terminal">
+          <div class="webhook-log-line log-info"><span class="log-time">[08:30:00]</span> Marketplace Webhook Listener kutish holatida: https://api.marketplace.uz/v1/webhook</div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    let currentBrand = 'olx';
+    let selectedCarrier = 'fargo';
+    let activeTrackingCode = 'UZ88492011223';
+
+    // Platform Specific Product Catalogs with Real Purchased Prices
+    const platformCatalog = {
+      olx: {
+        order_no: 'OLX-884920',
+        tracking_code: 'UZ88492011223',
+        title: 'Apple MacBook Pro 14" (M3 Pro 18/512GB)',
+        price: 21500000,
+        price_display: '21,500,000 UZS',
+        image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=240&q=80',
+        seller: 'Alisher V. (Toshkent, Chilonzor 19)',
+        buyer: 'Aziz Karimov (Samarqand, Registon)',
+        payment_status: "To'langan (Click / Payme)"
+      },
+      uzum: {
+        order_no: 'UZUM-984210',
+        tracking_code: 'UZ77019283401',
+        title: 'Nike Air Max 270 Sport Sneakers',
+        price: 1450000,
+        price_display: '1,450,000 UZS',
+        image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=240&q=80',
+        seller: 'Nike Official Store Tashkent',
+        buyer: 'Sardor Rahimov (Samarqand, Registon Hub)',
+        payment_status: "To'langan (Uzum Pay)"
+      },
+      asaxiy: {
+        order_no: 'ASAXIY-409182',
+        tracking_code: 'UZ55409182001',
+        title: 'Samsung Galaxy S24 Ultra 12/512GB Titanium',
+        price: 14800000,
+        price_display: '14,800,000 UZS',
+        image: 'https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?auto=format&fit=crop&w=240&q=80',
+        seller: 'Asaxiy Official Tech Store',
+        buyer: 'Jamshid Olimov (Buxoro markaz)',
+        payment_status: "To'langan (Asaxiy Nasiya)"
+      },
+      zoodmall: {
+        order_no: 'ZOOD-772109',
+        tracking_code: 'UZ66772109001',
+        title: 'Sony WH-1000XM5 Wireless Headphones',
+        price: 4200000,
+        price_display: '4,200,000 UZS',
+        image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=240&q=80',
+        seller: 'Global Cross-Border Hub',
+        buyer: 'Malika Yusupova (Toshkent, Mirobod)',
+        payment_status: "To'langan (ZoodPay)"
+      }
+    };
+
+    // 1. Fetch live multi-carrier quotes via GET /v1/rates
+    async function loadRates() {
+      const container = document.getElementById('rates-container');
+      try {
+        const res = await fetch('/v1/rates?origin=Toshkent&destination=Samarqand&weight_kg=2.0');
+        const data = await res.json();
+        
+        container.innerHTML = data.rates.map((r, idx) => `
+          <div class="rate-card ${r.carrier_code === selectedCarrier ? 'selected' : ''}" onclick="selectCarrier('${r.carrier_code}')">
+            <div class="rate-carrier-info">
+              <input type="radio" name="courier_choice" class="rate-radio" ${r.carrier_code === selectedCarrier ? 'checked' : ''}>
+              <div>
+                <div class="rate-name">
+                  ${r.carrier_name}
+                  ${r.badge ? `<span class="rate-badge">${r.badge}</span>` : ''}
+                </div>
+                <div class="rate-service">${r.service_name} • ${r.features[0]}</div>
+              </div>
+            </div>
+            <div class="rate-price-tag">
+              <div class="rate-amount">${r.price_uzs.toLocaleString()} UZS</div>
+              <div class="rate-eta">${r.estimated_days}</div>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        container.innerHTML = '<div style="color:red; font-size:12px;">Tariflarni olishda xatolik yuz berdi.</div>';
+      }
+    }
+
+    function selectCarrier(carrierCode) {
+      selectedCarrier = carrierCode;
+      loadRates();
+    }
+
+    // 2. Book shipment via POST /v1/shipments with Real Item & Purchased Price
+    document.getElementById('btn-book-shipment').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-book-shipment');
+      const text = document.getElementById('btn-book-text');
+      btn.disabled = true;
+      text.innerText = 'Bron qilinmoqda...';
+
+      try {
+        const curProd = platformCatalog[currentBrand];
+        const newOrderNum = `${currentBrand.toUpperCase()}-${Math.floor(100000 + Math.random() * 900000)}`;
+        const payload = {
+          external_order_no: newOrderNum,
+          carrier_code: selectedCarrier,
+          marketplace_id: currentBrand,
+          sender_city: "Toshkent",
+          recipient_city: "Samarqand",
+          recipient_address: "Samarqand shahar, Registon 14",
+          item: {
+            title: curProd.title,
+            price: curProd.price,
+            currency: "UZS",
+            image_url: curProd.image,
+            payment_status: curProd.payment_status,
+            seller: curProd.seller,
+            buyer: curProd.buyer
+          }
+        };
+
+        const res = await fetch('/v1/shipments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          activeTrackingCode = data.tracking_code;
+          document.getElementById('order-card-title').innerText = `Xarid qilingan tovar (Order #${newOrderNum})`;
+          logWebhook(`[SUCCESS] Yangi jo'natma bron qilindi! Kod: ${activeTrackingCode} (${data.carrier.name}) - Tovar: "${curProd.title}" (${curProd.price_display})`, 'log-success');
+          
+          // Re-render embed widget inside marketplace
+          updateWidget();
+          text.innerText = `Bron qilindi: ${activeTrackingCode}`;
+        }
+      } catch (e) {
+        alert('Xatolik yuz berdi: ' + e);
+        text.innerText = 'Qayta urinish';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // 3. Update <uz-tracking-view>
+    function updateWidget() {
+      const wrapper = document.getElementById('embed-wrapper');
+      wrapper.innerHTML = `
+        <uz-tracking-view 
+          id="uz-tracker"
+          tracking-code="${activeTrackingCode}" 
+          brand="${currentBrand}" 
+          height="520px">
+        </uz-tracking-view>
+      `;
+    }
+
+    // 4. Send Simulated Courier Webhook to Engine
+    async function sendCourierWebhook(status, note) {
+      logWebhook(`[KURYER CHEKPOINTI] Kuryer tizimi status yubordi: "${status}" -> ${note}`, 'log-info');
+
+      try {
+        const payload = {
+          tracking_code: activeTrackingCode,
+          raw_status: status,
+          note: note
+        };
+
+        const res = await fetch(`/v1/carriers/${selectedCarrier}/webhook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          const wp = data.dispatched_to_marketplace_webhook;
+          logWebhook(`[DISPATCH -> MARKETPLACE WEBHOOK] Webhook yetkazildi: event=${wp.event}, status=${wp.standardized_status}`, 'log-success');
+          // Reload iframe view
+          updateWidget();
+        }
+      } catch (e) {
+        logWebhook(`[ERROR] Webhook xatoligi: ${e}`, 'log-info');
+      }
+    }
+
+    function logWebhook(msg, cls) {
+      const term = document.getElementById('webhook-terminal');
+      const time = new Date().toTimeString().split(' ')[0];
+      const div = document.createElement('div');
+      div.className = `webhook-log-line ${cls || ''}`;
+      div.innerHTML = `<span class="log-time">[${time}]</span> ${msg}`;
+      term.prepend(div);
+    }
+
+    // 5. Marketplace Switcher
+    const mpSelect = document.getElementById('marketplace-switcher');
+    mpSelect.addEventListener('change', (e) => {
+      applyPlatform(e.target.value);
+    });
+
+    function applyPlatform(brand) {
+      currentBrand = brand;
+      document.body.setAttribute('data-marketplace', currentBrand);
+      
+      const names = {
+        'olx': 'OLX.uz',
+        'uzum': 'Uzum Market',
+        'asaxiy': 'Asaxiy.uz',
+        'zoodmall': 'Zoodmall'
+      };
+      const taglines = {
+        'olx': 'OLX Yetkazib berish va Xavfsiz bitim',
+        'uzum': 'Uzum 1 kunda yetkazib berish xizmati',
+        'asaxiy': 'Asaxiy Tezkor yetkazish',
+        'zoodmall': 'Zoodmall Xalqaro kuryerlik yetkazish'
+      };
+
+      document.getElementById('marketplace-name').innerText = names[currentBrand] || currentBrand.toUpperCase();
+      document.getElementById('active-brand-tag').innerText = `Brend: ${names[currentBrand]}`;
+      const taglineEl = document.getElementById('mp-tagline');
+      if (taglineEl) taglineEl.innerText = taglines[currentBrand] || 'Xavfsiz yetkazib berish xizmati';
+
+      const prod = platformCatalog[currentBrand];
+      if (prod) {
+        document.getElementById('order-card-title').innerText = `Xarid qilingan tovar (Order #${prod.order_no})`;
+        document.getElementById('product-card-img').src = prod.image;
+        document.getElementById('product-card-title').innerText = prod.title;
+        document.getElementById('product-card-seller').innerText = `Sotuvchi: ${prod.seller}`;
+        document.getElementById('product-card-buyer').innerText = `Xaridor: ${prod.buyer}`;
+        document.getElementById('product-card-price').innerText = prod.price_display;
+        activeTrackingCode = prod.tracking_code;
+      }
+
+      updateWidget();
+      logWebhook(`[MARKETPLACE] Brend o'zgartirildi: ${names[currentBrand]} (Order: #${prod ? prod.order_no : ''})`, 'log-info');
+    }
+
+    // Initialize
+    loadRates();
+  </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UzTrack - Pinduoduo Style Universal Logistics Tracking</title>
+  <title>Buyurtma va Yetkazib Berish Xaritasi</title>
   
   <!-- Inter Google Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,41 +28,41 @@
           </svg>
         </button>
         <div class="pdd-brand">
-          <span class="pdd-badge">UzTrack</span>
-          <span id="header-status-title" class="pdd-status-text">Delivered</span>
+          <span id="header-brand-badge" class="pdd-badge">Yetkazish</span>
+          <span id="header-status-title" class="pdd-status-text">Yetkazilmoqda</span>
         </div>
       </div>
 
       <div class="header-right">
-        <!-- Demo Switcher -->
-        <select id="demo-carrier-select" class="header-select">
-          <option value="UZ77019283401">Fargo: Toshkent → Samarqand</option>
-          <option value="UZ99800112233">Yandex: Toshkent Shahar Ichida</option>
-        </select>
+        <!-- Developer Controls (Automatically hidden when embedded in Marketplace) -->
+        <div class="header-dev-controls" style="display: flex; align-items: center; gap: 8px;">
+          <!-- Demo Switcher -->
+          <select id="demo-carrier-select" class="header-select">
+            <option value="UZ88492011223">OLX: MacBook Pro 14</option>
+            <option value="UZ77019283401">Uzum: Nike Air Max</option>
+            <option value="UZ99800112233">Yandex: Shahar Ichida</option>
+          </select>
 
-        <!-- Customer Brand Theme Schema Switcher -->
-        <select id="brand-select" class="header-select" title="Mijoz Brenda Dizayni (Theme Schema)">
-          <option value="pdd">Brend: Standart (PDD Yashil)</option>
-          <option value="uzum">Brend: Uzum Market (Binafsha)</option>
-          <option value="olx">Brend: OLX.uz (Firuzarang/Teal)</option>
-          <option value="asaxiy">Brend: Asaxiy (Moviy/Blue)</option>
-          <option value="zoodmall">Brend: Zoodmall (To'q sariq)</option>
-          <option value="yandex">Brend: Yandex (Qizil/Red)</option>
-        </select>
+          <!-- Customer Brand Theme Schema Switcher -->
+          <select id="brand-select" class="header-select" title="Mijoz Brenda Dizayni (Theme Schema)">
+            <option value="olx">Brend: OLX.uz (Firuzarang/Teal)</option>
+            <option value="uzum">Brend: Uzum Market (Binafsha)</option>
+            <option value="asaxiy">Brend: Asaxiy (Moviy/Blue)</option>
+            <option value="zoodmall">Brend: Zoodmall (To'q sariq)</option>
+            <option value="pdd">Brend: Standart (Yashil)</option>
+            <option value="yandex">Brend: Yandex (Qizil/Red)</option>
+          </select>
 
-        <!-- Language Switcher -->
-        <select id="lang-select" class="header-select">
-          <option value="uz">O'zbekcha</option>
-          <option value="ru">Русский</option>
-          <option value="en">English</option>
-        </select>
-
-        <!-- Dark / Light Mode Switcher -->
-        <button id="btn-toggle-theme" class="nav-circle-btn" title="Tun / Kun rejimi">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
-        </button>
+          <!-- Link to Marketplace & Classifieds Integration Demo -->
+          <a href="/marketplace-demo.html" class="header-pill-btn" style="background: #2563eb; color: white; text-decoration: none; border-color: #1d4ed8;" title="Marketplace Integratsiyasi Namoyishi">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            <span>Marketplace Demo</span>
+          </a>
+        </div>
 
         <button class="header-pill-btn" title="Mijozlar xizmati">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -106,16 +106,28 @@
     <!-- Bottom: Pinduoduo Card Drawer (Delivery Info & Order Details) -->
     <div class="pdd-card-drawer">
       
-      <!-- Card 1: Carrier & Tracking Code Bar (Pinduoduo Style) -->
-      <div class="pdd-card pdd-carrier-row">
-        <div class="carrier-left">
-          <img id="product-thumb" class="product-thumb" src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=120&q=80" alt="Product Thumbnail">
-          <div class="carrier-details">
-            <span id="carrier-name-tag" class="carrier-green-label">Fargo Express:</span>
-            <span id="tracking-number-text" class="tracking-number-code">UZ77019283401</span>
+      <!-- Card 1: Purchased Item & Logistics Waybill Bar -->
+      <div class="pdd-card pdd-item-card">
+        <div class="item-product-header">
+          <img id="product-thumb" class="product-thumb" src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=120&q=80" alt="Apple MacBook Pro">
+          <div class="item-info-col">
+            <div id="item-title-display" class="item-title">Apple MacBook Pro 14" (M3 Pro 18/512GB)</div>
+            <div class="item-meta-row">
+              <span id="item-price-display" class="item-price">21,500,000 UZS</span>
+              <span id="item-payment-badge" class="item-payment-badge">To'langan (Click / Payme)</span>
+            </div>
           </div>
         </div>
-        <button id="btn-copy-tracking" class="pdd-copy-btn">Copy</button>
+
+        <div class="carrier-tracking-divider"></div>
+
+        <div class="carrier-waybill-row">
+          <div class="carrier-details">
+            <span id="carrier-name-tag" class="carrier-green-label">Fargo Express:</span>
+            <span id="tracking-number-text" class="tracking-number-code">UZ88492011223</span>
+          </div>
+          <button id="btn-copy-tracking" class="pdd-copy-btn">Copy</button>
+        </div>
       </div>
 
       <!-- Card 2: Courier Contact Row -->
@@ -212,7 +224,14 @@
             <polyline points="18 15 12 9 6 15"></polyline>
           </svg>
         </button>
+      </div>
 
+      <!-- Webpage Footer Map Attribution (Outside Map Canvas, like Pinduoduo / JD / Taobao) -->
+      <div class="map-legal-attribution">
+        <a href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre</a> | 
+        <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> 
+        <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">© OpenMapTiles</a> 
+        Data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>
       </div>
 
     </div>
@@ -252,15 +271,33 @@
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    const code = params.get('code') || 'UZ77019283401';
+    const code = params.get('code') || 'UZ88492011223';
     const lang = params.get('lang') || 'uz';
-    let brand = params.get('brand') || 'pdd';
+    let brand = params.get('brand') || 'olx';
     let theme = params.get('theme') || 'light';
     const customPrimary = params.get('primary');
+    const isEmbed = params.get('embed') === 'true' || params.has('embed') || window.self !== window.top;
 
     // Apply Brand Schema and Theme Mode to DOM
     document.body.setAttribute('data-brand', brand);
     document.body.setAttribute('data-theme', theme);
+    if (isEmbed) {
+      document.body.classList.add('embedded');
+    }
+
+    // Set White-Label Brand Pill Tag (Never show internal engine name)
+    const brandBadge = document.getElementById('header-brand-badge');
+    if (brandBadge) {
+      const brandNames = {
+        'olx': 'OLX',
+        'uzum': 'Uzum',
+        'asaxiy': 'Asaxiy',
+        'zoodmall': 'Zoodmall',
+        'yandex': 'Yandex',
+        'pdd': 'Yetkazish'
+      };
+      brandBadge.innerText = brandNames[brand.toLowerCase()] || brand.toUpperCase();
+    }
 
     if (customPrimary) {
       document.documentElement.style.setProperty('--brand-primary', customPrimary);
@@ -331,7 +368,7 @@
     document.getElementById('btn-share')?.addEventListener('click', () => {
       if (navigator.share) {
         navigator.share({
-          title: 'UzTrack - Kuzatuv',
+          title: 'Buyurtmani kuzatish',
           text: `Jo'natma kodi: ${code}`,
           url: window.location.href
         }).catch(() => {});

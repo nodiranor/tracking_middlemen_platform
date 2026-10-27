@@ -217,13 +217,50 @@ body {
 }
 
 .pdd-badge {
-  background: #e11d48;
-  color: white;
+  background: var(--brand-primary);
+  color: #ffffff;
   font-size: 11px;
   font-weight: 800;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 6px;
   letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+body[data-brand="olx"] .pdd-badge {
+  background: #002f34;
+  color: #23e5db;
+  border: 1px solid rgba(35, 229, 219, 0.35);
+}
+
+body[data-brand="uzum"] .pdd-badge {
+  background: #7000ff;
+  color: #ffffff;
+}
+
+body[data-brand="asaxiy"] .pdd-badge {
+  background: #0066ff;
+  color: #ffffff;
+}
+
+body[data-brand="zoodmall"] .pdd-badge, body[data-brand="zood"] .pdd-badge {
+  background: #ff6b00;
+  color: #ffffff;
+}
+
+body[data-brand="yandex"] .pdd-badge {
+  background: #fc3f1d;
+  color: #ffffff;
+}
+
+/* White-Label Embedded View inside Host Marketplaces */
+body.embedded .header-dev-controls,
+body.embedded .floating-sim-control {
+  display: none !important;
+}
+
+body.embedded .pdd-header {
+  padding: 8px 14px;
 }
 
 .pdd-status-text {
@@ -289,6 +326,36 @@ body {
 #map-viewport {
   width: 100%;
   height: 100%;
+}
+
+/* Pinduoduo / Taobao / JD Style Clean Map Canvas: Completely hide (i) button and map overlays */
+.maplibregl-ctrl-attrib,
+.maplibregl-ctrl-attrib-button,
+.maplibregl-ctrl-bottom-right,
+.maplibregl-ctrl-bottom-left,
+.maplibregl-compact {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Webpage Footer Map Attribution (cleanly placed at bottom of page, not on map canvas) */
+.map-legal-attribution {
+  text-align: center;
+  font-size: 10px;
+  color: #9ca3af;
+  padding: 8px 16px 24px;
+  margin-top: 4px;
+}
+
+.map-legal-attribution a {
+  color: #9ca3af;
+  text-decoration: none;
+}
+
+.map-legal-attribution a:hover {
+  text-decoration: underline;
 }
 
 /* Floating Hourly Simulation Action */
@@ -424,7 +491,77 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-/* Row 1: Carrier & Tracking Number Bar */
+/* Row 1: Purchased Item & Logistics Bar */
+.pdd-item-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item-product-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.product-thumb {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--pdd-border);
+  flex-shrink: 0;
+}
+
+.item-info-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pdd-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.item-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.item-price {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--brand-primary, #16a34a);
+}
+
+.item-payment-badge {
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--brand-primary-light, #dcfce7);
+  color: var(--brand-primary, #16a34a);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.carrier-tracking-divider {
+  height: 1px;
+  background: var(--pdd-border);
+  margin: 2px 0;
+}
+
+.carrier-waybill-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .pdd-carrier-row {
   display: flex;
   align-items: center;
@@ -435,14 +572,6 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.product-thumb {
-  width: 44px;
-  height: 44px;
-  border-radius: 6px;
-  object-fit: cover;
-  border: 1px solid var(--pdd-border);
 }
 
 .carrier-details {

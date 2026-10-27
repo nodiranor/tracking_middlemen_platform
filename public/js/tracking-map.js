@@ -40,6 +40,18 @@ class UzTrackMap {
 
   setBrand(brand) {
     this.currentBrand = brand;
+    const brandBadge = document.getElementById('header-brand-badge');
+    if (brandBadge) {
+      const brandNames = {
+        'olx': 'OLX',
+        'uzum': 'Uzum',
+        'asaxiy': 'Asaxiy',
+        'zoodmall': 'Zoodmall',
+        'yandex': 'Yandex',
+        'pdd': 'Yetkazish'
+      };
+      brandBadge.innerText = brandNames[brand.toLowerCase()] || brand.toUpperCase();
+    }
     this.renderRoadPath();
     this.renderPinduoduoBadges();
     this.renderVehicle();
@@ -75,7 +87,7 @@ class UzTrackMap {
       ? 'https://tiles.openfreemap.org/styles/dark'
       : 'https://tiles.openfreemap.org/styles/positron';
 
-    // Clean, minimalist vector map (Adapts to Light / Dark)
+    // Clean, minimalist vector map (Adapts to Light / Dark, Pinduoduo/Taobao style)
     this.map = new maplibregl.Map({
       container: this.containerId,
       style: mapStyle,
@@ -83,7 +95,7 @@ class UzTrackMap {
       zoom: initialZoom,
       pitch: 0, // Flat clean overview matching Pinduoduo screenshots
       bearing: 0,
-      attributionControl: true
+      attributionControl: false // Disable the (i) info button and attribution overlay on map canvas
     });
 
     this.map.on('load', () => {
@@ -132,13 +144,23 @@ class UzTrackMap {
     await this.fetchRealRoadGeometry();
   }
 
-  // Fetches real road coordinates from OSRM
+  // Fetches real road coordinates from OSRM following domestic Uzbekistan highway
   async fetchRealRoadGeometry() {
     const origin = this.shipmentData.route.origin;
     const dest = this.shipmentData.route.destination;
+    const waypoints = this.shipmentData.route.waypoints || [];
 
     try {
-      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${dest.lng},${dest.lat}?overview=full&geometries=geojson`;
+      // Build domestic transit query passing all domestic corridor waypoints
+      // to ensure the route strictly bypasses the Kazakhstan Makhtaaral wedge
+      let points = [];
+      if (waypoints && waypoints.length > 0) {
+        points = waypoints.map(w => `${w.lng},${w.lat}`);
+      } else {
+        points = [`${origin.lng},${origin.lat}`, `${dest.lng},${dest.lat}`];
+      }
+
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${points.join(';')}?overview=full&geometries=geojson`;
       const res = await fetch(osrmUrl);
       if (res.ok) {
         const data = await res.json();
@@ -381,6 +403,44 @@ class UzTrackMap {
       headerTitle.innerText = titles[s.status] ? titles[s.status][l] : s.status;
     }
 
+    // White-Label Brand Badge (Never show internal engine name to marketplace customer)
+    const brandBadge = document.getElementById('header-brand-badge');
+    if (brandBadge) {
+      const brandNames = {
+        'olx': 'OLX',
+        'uzum': 'Uzum',
+        'asaxiy': 'Asaxiy',
+        'zoodmall': 'Zoodmall',
+        'yandex': 'Yandex',
+        'pdd': 'Yetkazish'
+      };
+      const bKey = (this.currentBrand || s.marketplace_id || 'olx').toLowerCase();
+      brandBadge.innerText = brandNames[bKey] || bKey.toUpperCase();
+    }
+
+    // Item Details (Purchased Item, Price, Image, Payment Status)
+    if (s.item) {
+      const productThumb = document.getElementById('product-thumb');
+      const itemTitleDisplay = document.getElementById('item-title-display');
+      const itemPriceDisplay = document.getElementById('item-price-display');
+      const itemPaymentBadge = document.getElementById('item-payment-badge');
+
+      if (productThumb && s.item.image_url) {
+        productThumb.src = s.item.image_url;
+        productThumb.alt = s.item.title || 'Product';
+      }
+      if (itemTitleDisplay && s.item.title) {
+        itemTitleDisplay.innerText = s.item.title;
+      }
+      if (itemPriceDisplay && s.item.price !== undefined) {
+        const cur = s.item.currency || 'UZS';
+        itemPriceDisplay.innerText = `${Number(s.item.price).toLocaleString()} ${cur}`;
+      }
+      if (itemPaymentBadge && s.item.payment_status) {
+        itemPaymentBadge.innerText = s.item.payment_status;
+      }
+    }
+
     // Carrier & Tracking Code
     const carrierTag = document.getElementById('carrier-name-tag');
     if (carrierTag && s.carrier) {
@@ -506,13 +566,17 @@ class UzTrackMap {
       ];
     }
 
+    // 100% Domestic Uzbekistan highway coordinates (Tashkent -> Guliston -> Yangiyer -> Dashtobod -> Zarbdor -> Jizzax -> Samarkand)
+    // Strictly stays within Uzbekistan borders; 0 coordinates in Kazakhstan
     return [
-      [69.2198, 41.2268], [69.1860, 41.2050], [69.1713, 41.2117], [69.1120, 41.1685],
-      [69.0500, 41.1167], [69.0503, 41.0906], [68.8871, 40.9766], [68.7594, 40.9411],
-      [68.6850, 40.8650], [68.6618, 40.8373], [68.6950, 40.7180], [68.5200, 40.5400],
-      [68.3550, 40.4050], [68.1800, 40.2800], [68.0400, 40.1600], [67.8422, 40.1158],
-      [67.7500, 40.0800], [67.5850, 40.0150], [67.4500, 39.9800], [67.3500, 39.8900],
-      [67.2711, 39.7611], [67.1500, 39.7100], [67.0400, 39.6850], [66.9597, 39.6542]
+      [69.219772, 41.22679], [69.171201, 41.211159], [69.094134, 41.148597], [69.050504, 41.117053],
+      [68.979743, 41.045684], [68.872624, 40.971266], [68.783584, 40.972842], [68.760248, 40.940687],
+      [68.756148, 40.954534], [68.675535, 40.892832], [68.675869, 40.801833], [68.705752, 40.686239],
+      [68.744845, 40.559071], [68.789000, 40.485816], [68.797417, 40.377566], [68.810393, 40.241623],
+      [68.485259, 40.137393], [68.422360, 40.071773], [68.169992, 40.080075], [67.877208, 40.096359],
+      [67.827770, 40.118930], [67.733100, 40.086513], [67.644204, 40.046631], [67.593927, 40.004665],
+      [67.536192, 39.948803], [67.414163, 39.831405], [67.280875, 39.762762], [67.104052, 39.715102],
+      [67.042497, 39.675621], [66.989043, 39.661661], [66.959316, 39.654088]
     ];
   }
 
@@ -520,10 +584,17 @@ class UzTrackMap {
     if (code === 'UZ99800112233') {
       return {
         tracking_code: "UZ99800112233",
-        external_order_no: "261020-287425216811256",
+        external_order_no: "OLX-338192",
         marketplace_id: "olx",
         carrier: { code: "yandex", name: "Yandex Delivery", support_phone: "+998712003344" },
         status: "OUT_FOR_DELIVERY",
+        item: {
+          title: "Sony PlayStation 5 Slim 1TB + DualSense",
+          price: 6800000,
+          currency: "UZS",
+          image_url: "https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=240&q=80",
+          payment_status: "To'langan (Payme)"
+        },
         current_location: { city: "Toshkent", hub: "Chilonzor distribyutsiya punkti", lat: 41.2721, lng: 69.2012 },
         route: {
           origin: { city: "Toshkent (Chilonzor)", hub: "Chilonzor 19-mavze", lat: 41.2721, lng: 69.2012 },
@@ -550,53 +621,104 @@ class UzTrackMap {
             description_en: "Courier Bobur Temirov is out for delivery.",
             location_name: "Toshkent",
             timestamp: new Date().toISOString()
-          },
-          {
-            code: "ORIGIN_HUB_IN",
-            title_uz: "Distribyutsiya markazida",
-            title_ru: "В пункте распределения",
-            title_en: "At Hub",
-            description_uz: "Chilonzor distribyutsiya markaziga yetib keldi.",
-            description_ru: "Прибыло в пункт распределения Чиланзар.",
-            description_en: "Arrived at distribution hub.",
-            location_name: "Toshkent",
-            timestamp: new Date(Date.now() - 3600000 * 2).toISOString()
           }
         ]
       };
     }
 
+    if (code === 'UZ77019283401') {
+      return {
+        tracking_code: "UZ77019283401",
+        external_order_no: "UZUM-984210",
+        marketplace_id: "uzum",
+        carrier: { code: "fargo", name: "Fargo Express", support_phone: "+998712000000" },
+        status: "IN_TRANSIT",
+        item: {
+          title: "Nike Air Max 270 Sport Sneakers",
+          price: 1450000,
+          currency: "UZS",
+          image_url: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=240&q=80",
+          payment_status: "To'langan (Uzum Pay)"
+        },
+        current_location: { city: "Jizzax", hub: "Jizzax M39 tranzit nazorati", lat: 40.1158, lng: 67.8422 },
+        inspection_photos: [
+          {
+            url: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
+            thumb: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=300&q=80",
+            caption_uz: "Nike Air Max sifat va butunlik tekshiruvi (Ombor 139 / Fargo)",
+            caption_ru: "Проверка качества и целостности (Склад 139 / Fargo)",
+            caption_en: "Quality and integrity inspection (Hub 139 / Fargo)"
+          }
+        ],
+        route: {
+          origin: { city: "Toshkent", hub: "Sergeli Markaziy Saralash Markazi", lat: 41.2268, lng: 69.2198 },
+          destination: { city: "Samarqand", hub: "Registon Markaziy Hub", lat: 39.6542, lng: 66.9597 },
+          waypoints: [
+            { city: "Toshkent", label: "Sergeli Markaziy Saralash Markazi", lat: 41.2268, lng: 69.2198, is_passed: true },
+            { city: "Jizzax", label: "Jizzax M39 tranzit nazorati", lat: 40.1158, lng: 67.8422, is_passed: true },
+            { city: "Samarqand", label: "Registon Markaziy Hub", lat: 39.6542, lng: 66.9597, is_passed: false }
+          ]
+        },
+        courier: { name: "Jasur Aliyev", phone: "+998 90 123 45 67" },
+        timeline: [
+          {
+            code: "IN_TRANSIT",
+            title_uz: "Shaharlararo yo'lda",
+            title_ru: "В пути между городами",
+            title_en: "In Transit",
+            description_uz: "Jo'natma Jizzax M39 tranzit punkti orqali Samarqand tomon harakatlanmoqda.",
+            description_ru: "Отправление движется через Джизак в сторону Самарканда (трасса М39).",
+            description_en: "Parcel is in transit passing Jizzakh toward Samarkand (M39).",
+            location_name: "Jizzax",
+            timestamp: new Date().toISOString()
+          }
+        ]
+      };
+    }
+
+    // Default: OLX MacBook Pro 14" Order (UZ88492011223)
     return {
-      tracking_code: "UZ77019283401",
-      external_order_no: "261020-412813934891256",
-      marketplace_id: "uzum",
+      tracking_code: code || "UZ88492011223",
+      external_order_no: "OLX-884920",
+      marketplace_id: "olx",
       carrier: { code: "fargo", name: "Fargo Express", support_phone: "+998712000000" },
       status: "IN_TRANSIT",
+      item: {
+        title: "Apple MacBook Pro 14\" (M3 Pro 18/512GB)",
+        price: 21500000,
+        currency: "UZS",
+        image_url: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=240&q=80",
+        payment_status: "To'langan (Click / Payme)"
+      },
       current_location: { city: "Jizzax", hub: "Jizzax M39 tranzit nazorati", lat: 40.1158, lng: 67.8422 },
       inspection_photos: [
         {
-          url: "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80",
-          thumb: "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=300&q=80",
-          caption_uz: "Sergeli saralash omborida jo'natma qadog'i tekshiruvi (验货照)",
-          caption_ru: "Фото фиксации груза на складе Сергели (验货照)",
-          caption_en: "Cargo parcel received at Sergeli sorting hub (Inspection Photo)"
+          url: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80",
+          thumb: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=300&q=80",
+          caption_uz: "Apple MacBook Pro 14\" ombor qabuli tekshiruvi (验货照)",
+          caption_ru: "Проверка корпуса и комплектации MacBook Pro 14\" (验货照)",
+          caption_en: "MacBook Pro 14 physical inspection photo at hub"
         },
         {
-          url: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
-          thumb: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=300&q=80",
-          caption_uz: "Sifat va butunlik tekshiruvi (Ombor 139 / Fargo)",
-          caption_ru: "Проверка качества и целостности (Склад 139 / Fargo)",
-          caption_en: "Quality and integrity inspection (Hub 139 / Fargo)"
+          url: "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80",
+          thumb: "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=300&q=80",
+          caption_uz: "Havo-pufakchali himoya qadog'i va plomba (Fargo Hub)",
+          caption_ru: "Защитная упаковка и пломбировка (Fargo Hub)",
+          caption_en: "Protective bubble wrapping and security seal"
         }
       ],
       route: {
-        origin: { city: "Toshkent", hub: "Sergeli Markaziy Saralash Markazi", lat: 41.2268, lng: 69.2198 },
-        destination: { city: "Samarqand", hub: "Registon Markaziy Hub, 14-uy", lat: 39.6542, lng: 66.9597 },
+        origin: { city: "Toshkent", hub: "Toshkent Chilonzor 19", lat: 41.2268, lng: 69.2198 },
+        destination: { city: "Samarqand", hub: "Registon Markaziy Hub, 14", lat: 39.6542, lng: 66.9597 },
         waypoints: [
-          { city: "Toshkent", label: "Sergeli Markaziy Saralash Markazi", lat: 41.2268, lng: 69.2198, is_passed: true },
+          { city: "Toshkent", label: "Chilonzor qabul punkti", lat: 41.2268, lng: 69.2198, is_passed: true },
           { city: "Yangiyo'l", label: "M39 Yangiyo'l nazorati", lat: 41.1167, lng: 69.0500, is_passed: true },
           { city: "Chinoz", label: "Chinoz daryo o'tish punkti", lat: 40.9411, lng: 68.7594, is_passed: true },
-          { city: "Sirdaryo", label: "Guliston / Sirdaryo tranziti", lat: 40.8373, lng: 68.6618, is_passed: true },
+          { city: "Sirdaryo", label: "Sirdaryo tranzit chorrahasi", lat: 40.8373, lng: 68.6618, is_passed: true },
+          { city: "Guliston", label: "Guliston aylanma tranzit yo'li", lat: 40.4897, lng: 68.7847, is_passed: true },
+          { city: "Yangiyer", label: "Yangiyer janubiy logistika nuqtasi", lat: 40.2667, lng: 68.8167, is_passed: true },
+          { city: "Dashtobod", label: "Dashtobod magistral chorrahasi", lat: 40.1000, lng: 68.4500, is_passed: true },
+          { city: "Zarbdor", label: "Zarbdor orqali Jizzax koridori", lat: 40.0800, lng: 68.1700, is_passed: true },
           { city: "Jizzax", label: "Jizzax M39 tranzit nazorati", lat: 40.1158, lng: 67.8422, is_passed: true },
           { city: "G'allaorol", label: "G'allaorol dovoni", lat: 40.0150, lng: 67.5850, is_passed: false },
           { city: "Bulung'ur", label: "Samarqand kirish punkti", lat: 39.7611, lng: 67.2711, is_passed: false },
@@ -613,10 +735,10 @@ class UzTrackMap {
           title_uz: "Shaharlararo yo'lda",
           title_ru: "В пути между городами",
           title_en: "In Transit",
-          description_uz: "Jo'natma Jizzax M39 tranzit punkti orqali Samarqand tomon harakatlanmoqda.",
+          description_uz: "Jo'natma Jizzax orqali Samarqand tomon harakatlanmoqda (M39).",
           description_ru: "Отправление движется через Джизак в сторону Самарканда (трасса М39).",
           description_en: "Parcel is in transit passing Jizzakh toward Samarkand (M39).",
-          location_name: "Jizzax",
+          location_name: "Jizzax M39 tranziti",
           timestamp: new Date().toISOString()
         },
         {
@@ -624,33 +746,22 @@ class UzTrackMap {
           title_uz: "Saralash markazida",
           title_ru: "В сортировочном центре",
           title_en: "At Sorting Hub",
-          description_uz: "Toshkent Sergeli saralash markaziga qabul qilindi va yo'nalishga qo'yildi.",
-          description_ru: "Принято в сортировочном центре Ташкент Сергели.",
-          description_en: "Received at Tashkent Sergeli sorting hub.",
-          location_name: "Toshkent",
-          timestamp: new Date(Date.now() - 3600000 * 3).toISOString()
-        },
-        {
-          code: "PICKED_UP",
-          title_uz: "Kuryer qabul qildi",
-          title_ru: "Курьер забрал",
-          title_en: "Picked Up",
-          description_uz: "Jo'natuvchidan qabul qilib olindi.",
-          description_ru: "Заказ забран у отправителя.",
-          description_en: "Picked up from merchant.",
-          location_name: "Toshkent",
-          timestamp: new Date(Date.now() - 3600000 * 5).toISOString()
+          description_uz: "Toshkent Chilonzor saralash markaziga qabul qilindi va tekshirildi.",
+          description_ru: "Принято и проверено в сортировочном центре Ташкент Чиланзар.",
+          description_en: "Received and inspected at Tashkent Chilonzor sorting hub.",
+          location_name: "Toshkent Chilonzor Hub",
+          timestamp: new Date(Date.now() - 3600000 * 2).toISOString()
         },
         {
           code: "ORDER_CREATED",
           title_uz: "Buyurtma rasmiylashtirildi",
           title_ru: "Заказ оформлен",
-          title_en: "Order Placed",
-          description_uz: "Marketplaceda jo'natma yorlig'i yaratildi.",
-          description_ru: "Накладная отправления создана.",
-          description_en: "Shipment label created on the marketplace.",
+          title_en: "Order Created",
+          description_uz: "OLX orqali xarid qilindi (21,500,000 UZS to'langan). Jo'natma yorlig'i yaratildi.",
+          description_ru: "Куплено через OLX (оплачено 21,500,000 UZS). Накладная создана.",
+          description_en: "Purchased on OLX (21,500,000 UZS paid). Shipment label generated.",
           location_name: "Toshkent",
-          timestamp: new Date(Date.now() - 3600000 * 8).toISOString()
+          timestamp: new Date(Date.now() - 3600000 * 5).toISOString()
         }
       ]
     };
